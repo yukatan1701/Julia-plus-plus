@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <map>
+#include <set>
 
 using std::string;
 using std::cin;
@@ -9,51 +11,80 @@ using std::cout;
 using std::endl;
 using std::vector;
 using std::stack;
+using std::map;
+using std::set;
+using std::pair;
 
-enum LEXEM_TYPE {
-	NUM, OP 
-};
+enum LEXEMTYPE { NUM, OPER, VAR };
 
 class Lexem {
-protected:
-	LEXEM_TYPE lextype;
 public:
-	Lexem(LEXEM_TYPE type) { lextype = type; };
-	LEXEM_TYPE getLexType() const { return lextype; };
-	virtual void print() const {};
+	Lexem() {}
+	virtual LEXEMTYPE getLexemType() const = 0;
+	//virtual int getValue() const = 0;
+	virtual void print() const = 0;
 };
 
 class Number: public Lexem {
 	int value;
 public:
 	Number(int val);
-	int getValue() { return value; };
+	int getValue() const { return value; };
+	LEXEMTYPE getLexemType() const { return NUM; };
 	void print() const { cout << value << " "; };
 };
 
-Number::Number(int val = 0) : Lexem(NUM) {
+Number::Number(int val = 0) {
 	value = val;
 }
 
 enum OPERATOR {
-	PLUS, MINUS, MULTIPLY, LBRACKET, RBRACKET
+	EOL, EQUAL, PLUS, MINUS, MULTIPLY, LBRACKET, RBRACKET
 };
 
 int PRIORITY[] = {
-	0, 0, 1, 2, 2
+	0, 1, 2, 2, 3, 4, 4
+};
+
+set<char> OPER_SET { ';', '=', '+', '-', '*', '(', ')' };
+
+const char DELIMITER = ' ';
+const char NEWLINE = '\n';
+const char SEMICOLON = ';';
+
+class Variable: public Lexem {
+	int value;
+	string name;
+public:
+	Variable(string var_name, int var_val) { name = var_name; value = var_val; }
+	string getName() const { return name; }
+	int getValue() const { return value; }
+	void setValue(int val) { value = val; }
+	LEXEMTYPE getLexemType() const { return VAR; }
+	void print() const { cout << name << " "; }
 };
 
 class Oper: public Lexem {
 	OPERATOR opertype;
 public:
-	Oper(char op);
-	OPERATOR getType() { return opertype; };
-	int getValue(const Number & left, const Number & right);
+	Oper(OPERATOR type);
+	OPERATOR getType() const { return opertype; };
+	int getValue(const Lexem & l_left, const Lexem & l_right, 
+	             map<string, Variable *> & var_table) const;
+	LEXEMTYPE getLexemType() const { return OPER; };
+	int priority() const { return PRIORITY[opertype]; }
 	void print() const;
 };
 
-Oper::Oper(char op) : Lexem(OP) {
+OPERATOR getOperatorByChar(char op) {
+	OPERATOR opertype;
 	switch(op) {
+		case ';':
+			opertype = EOL;
+			break;
+		case '=':
+			opertype = EQUAL;
+			break;
 		case '+':
 			opertype = PLUS;
 			break;
@@ -72,10 +103,21 @@ Oper::Oper(char op) : Lexem(OP) {
 		default:
 			opertype = PLUS;
 	}
+	return opertype;
+}
+
+Oper::Oper(OPERATOR type) {
+	opertype = type;
 }
 
 void Oper::print() const{
 	switch (opertype) {
+		case EOL:
+			cout << ';';
+			break;
+		case EQUAL:
+			cout << '=';
+			break;
 		case PLUS:
 			cout << '+';
 			break;
@@ -95,57 +137,78 @@ void Oper::print() const{
 	cout << " ";
 }
 
-vector<Lexem *> parseLexem(const string & input) {
-	vector<Lexem *> v_lexem;
-	for (int i = 0; i < input.size(); ) {
-		Lexem *cur_lex;
-		if (input[i] >= '0' && input[i] <= '9') {
-			int value = 0;
-			while (input[i] >= '0' && input[i] <= '9') {
-				value = value * 10 + (input[i] - '0');
-				i++;
-			}
-			cur_lex = new Number(value);
-		} else {
-			cur_lex = new Oper(input[i]);
-			i++;
-		}
-		v_lexem.push_back(cur_lex);
+int Oper::getValue(const Lexem & l_left, const Lexem & l_right, 
+                   map<string, Variable *> & var_table) const {
+	int result = 0;
+	int left, right;
+	if (l_left.getLexemType() == VAR) {
+		const Variable &v_left = static_cast<const Variable &>(l_left);
+		left = v_left.getValue();
+	} else {	
+		const Number &n_left = static_cast<const Number &>(l_left);
+		left = n_left.getValue();
 	}
-	return v_lexem;
+	if (l_right.getLexemType() == VAR) {
+		const Variable &v_right = static_cast<const Variable &>(l_right);
+		right = v_right.getValue();
+	} else {	
+		const Number &n_right = static_cast<const Number &>(l_right);
+		right = n_right.getValue();
+	}
+
+	switch (opertype) {
+		case EQUAL:
+			result = right;
+			if (l_left.getLexemType() == VAR) {
+				const Variable &v_left = static_cast<const Variable &>(l_left);
+				var_table.find(v_left.getName())->second->setValue(right);
+			}
+			break;
+		case PLUS:
+			result = left + right;
+			break;
+		case MINUS:
+			result = left - right;
+			break;
+		case MULTIPLY:
+			result = left * right;
+			break;
+	}
+	return result;
 }
 
 Lexem *popFromTop(stack<Oper> & op_stack) {
 	OPERATOR type = op_stack.top().getType();
-	char type_char;
-	switch (type) {
-		case PLUS:
-			type_char = '+';
-			break;
-		case MINUS:
-			type_char = '-';
-			break;
-		case MULTIPLY:
-			type_char = '*';
-			break;
-		default:
-			type_char = '(';
-			break;
-	}
 	op_stack.pop();
-	return new Oper(type_char);
+	return new Oper(type);
+}
+
+enum ACCOCIATE { LEFT, RIGHT };
+
+bool checkPriority(const stack<Oper> & op_stack, const Oper *op) {
+	ACCOCIATE pos = LEFT;
+	if (op->getType() == EQUAL)
+		pos = RIGHT;
+	if (pos == LEFT)
+		return op->priority() <= op_stack.top().priority();
+	return op->priority() < op_stack.top().priority();
 }
 
 vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
 	vector<Lexem *> poliz;
 	stack<Oper> op_stack;
 	for (Lexem *cur : infix) {
-		if (cur->getLexType() == NUM) {
+		LEXEMTYPE lextype = cur->getLexemType();
+		if (lextype == NUM || lextype == VAR) {
 			poliz.push_back(cur);
 		} else {
-			Oper *op = dynamic_cast<Oper *>(cur);
+			Oper *op = static_cast<Oper *>(cur);
 			OPERATOR optype = op->getType();
-			if (optype == LBRACKET) {
+			if (optype == EOL) {
+				while (!op_stack.empty())
+					poliz.push_back(popFromTop(op_stack));
+				poliz.push_back(op);
+			} else if (optype == LBRACKET) {
 				op_stack.push(*op);
 			} else if (optype == RBRACKET) {
 				if (!op_stack.empty()) {
@@ -156,14 +219,10 @@ vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
 				}
 			} else {
 				if (!op_stack.empty()) {
-					OPERATOR toptype = op_stack.top().getType();
 					while(!op_stack.empty() 
-						  && PRIORITY[optype] <= PRIORITY[toptype] 
-						  && toptype < LBRACKET) {
-						//poliz.push_back(dynamic_cast<Lexem *>(&(op_stack.top())));
+						  && checkPriority(op_stack, op)
+						  && op_stack.top().getType() != LBRACKET) {
 						poliz.push_back(popFromTop(op_stack));
-						if (!op_stack.empty())
-							toptype = op_stack.top().getType();
 					}
 				}
 				op_stack.push(*op);
@@ -172,59 +231,132 @@ vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
 		//cout << "Stack size: " << op_stack.size() << endl;
 		//cout << "Poliz size: " << poliz.size() << endl;
 	}
-	while (!op_stack.empty()) {
-		poliz.push_back(popFromTop(op_stack));
-	}
 	return poliz;
 }
 
-int evaluatePoliz(vector<Lexem *> poliz) {
-	if (poliz.size() == 0)
-		return 0;
-	stack<int> values;
-	for (Lexem *cur : poliz) {
-		if (cur->getLexType() == NUM) {
-			Number *num = dynamic_cast<Number *>(cur);
-			values.push(num->getValue());
-		} else {
-			int val1 = values.top();
-			values.pop();
-			int val2 = values.top();
-			values.pop();
-			int result = 0;
-			Oper *op = dynamic_cast<Oper *>(cur);
-			OPERATOR type = op->getType();
-			switch (type) {
-				case PLUS:
-					result = val1 + val2;
-					break;
-				case MINUS:
-					result = val2 - val1;
-					break;
-				case MULTIPLY:
-					result = val1 * val2;
-					break;
-			}
-			values.push(result);
-		}
+void printTable(const map<string, Variable *> & var_table) {
+	cout << endl << "Var\t" << "| Value:" << endl;
+	cout << "----------------" << endl;
+	for (auto it = var_table.cbegin(); it != var_table.cend(); it++) {
+		cout << it->first << "\t| " << it->second->getValue() << endl;
 	}
-	return values.top();
 }
 
+map<string, Variable *> evaluatePoliz(vector<Lexem *> poliz) {
+	map<string, Variable *> var_table;
+	if (poliz.size() == 0)
+		return var_table;
+	stack<Lexem *> values;
+	for (Lexem *cur : poliz) {
+		LEXEMTYPE lextype = cur->getLexemType();
+		if (lextype == NUM) {
+			values.push(cur);
+		} else if (lextype == VAR) {
+			Variable *var = static_cast<Variable *>(cur);
+			var_table.insert(pair<string, Variable *>(var->getName(), var));
+			values.push(var_table.find(var->getName())->second);
+		} else {
+			Oper *op = static_cast<Oper *>(cur);
+			if (op->getType() == EOL) {
+				// TODO: free stack
+				continue;
+			}
+			Lexem *val2 = values.top();
+			values.pop();
+			Lexem *val1 = values.top();
+			values.pop();
+			int result = op->getValue(*val1, *val2, var_table);
+			values.push(new Number(result));
+		}
+	}
+	return var_table;
+}
+
+bool isVarChar(char ch) {
+	return ((ch >= 'a' && ch <= 'z') || 
+		(ch >= 'A' && ch <= 'Z') ||
+		(ch >= '0' && ch <= '9'));
+}
+
+vector<Lexem *> parseLexem(const string & input) {
+	vector<Lexem *> v_lexem;
+	bool has_eol = false;
+	for (int i = 0; i < input.size(); ) {
+		char ch = input[i];
+		if (ch == NEWLINE) {
+			if (!has_eol) {
+				throw -1;
+			} else
+				has_eol = false;
+			i++;
+			continue;
+		}
+		if (ch == DELIMITER) {
+			i++;
+			continue;
+		}
+		Lexem *cur_lex;
+		if (ch >= '0' && ch <= '9') {
+			int value = 0;
+			while (input[i] >= '0' && input[i] <= '9') {
+				value = value * 10 + (input[i] - '0');
+				i++;
+			}
+			cur_lex = new Number(value);
+		} else {
+			// operator
+			if (OPER_SET.find(ch) != OPER_SET.end()) {
+				cur_lex = new Oper(getOperatorByChar(ch));
+				if (ch == SEMICOLON)
+					has_eol = true;
+				i++;
+			} else { //variable
+				string var_name;
+				while (ch != DELIMITER && isVarChar(ch)) {
+					var_name.push_back(ch);
+					ch = input[++i];
+				}
+				cur_lex = new Variable(var_name, 0);
+			}
+		}
+		v_lexem.push_back(cur_lex);
+	}
+	return v_lexem;
+}
+
+string getCode() {
+	string text; 
+	getline(cin, text, (char) EOF);
+	return text;
+}
+
+
 int main() {
-	string input;
-	cin >> input;
-	vector<Lexem *> parsed = parseLexem(input);
+	string input = getCode();
+	//cout << input;
+	vector<Lexem *> parsed;
+	try {
+		parsed = parseLexem(input);
+		for (auto elem : parsed)
+			elem->print();
+		cout << endl;
+	} catch (int er_code) {
+		cout << "Error "<< er_code << ": semicolon is lost." << endl; 
+	}
 	vector<Lexem *> poliz = buildPoliz(parsed);
 	for (auto cur : poliz) {
 		cur->print();
 	}
-	cout << endl << evaluatePoliz(poliz) << endl;
-	for (Lexem * elem : parsed) {
-		delete elem;
+	cout << endl;
+	map<string, Variable *> var_table = evaluatePoliz(poliz);
+	printTable(var_table);
+	/*for (Lexem * elem : parsed) {
+		if (elem)
+			delete elem;
 	}
 	for (Lexem *elem : poliz) {
-		delete elem;
-	}
+		if (elem)
+			delete elem;
+	}*/
 	return 0;
 }
