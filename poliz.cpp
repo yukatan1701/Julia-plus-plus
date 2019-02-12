@@ -4,6 +4,7 @@
 #include <stack>
 #include <map>
 #include <set>
+#include <cctype>
 
 using std::string;
 using std::cin;
@@ -16,6 +17,8 @@ using std::set;
 using std::pair;
 
 enum LEXEMTYPE { NUM, OPER, VAR };
+
+enum ERROR_CODES { LOST_SEMICOLON, WRONG_VAR };
 
 class Lexem {
 public:
@@ -38,15 +41,27 @@ Number::Number(int val = 0) {
 	value = val;
 }
 
+const vector<string> OPERTEXT { ";", "=", "or", "and", "|", 
+                                "^", "&", "==", "!=", "<", 
+								"<=", ">", ">=", "<<", ">>", 
+								"+", "-", "*", "/", "%",
+								"(", ")" };
+
 enum OPERATOR {
-	EOL, EQUAL, PLUS, MINUS, MULTIPLY, LBRACKET, RBRACKET
+	EOL, ASSIGN, OR, AND, BITOR, 
+	XOR, BITAND, EQ, NEQ, LT,
+	LEQ, GT, GEQ, SHL, SHR,
+	PLUS, MINUS, MULT, DIV, MOD,
+	LBRACKET, RBRACKET
 };
 
 int PRIORITY[] = {
-	0, 1, 2, 2, 3, 4, 4
+	0, 1, 2, 3, 4, 
+	5, 6, 7, 7, 8,
+	8, 8, 8, 9, 9,
+	10, 10, 11, 11, 11,
+	12, 12
 };
-
-set<char> OPER_SET { ';', '=', '+', '-', '*', '(', ')' };
 
 const char DELIMITER = ' ';
 const char NEWLINE = '\n';
@@ -61,7 +76,7 @@ public:
 	int getValue() const { return value; }
 	void setValue(int val) { value = val; }
 	LEXEMTYPE getLexemType() const { return VAR; }
-	void print() const { cout << name << " "; }
+	void print() const { cout << "{" << name << "}" << " "; }
 };
 
 class Oper: public Lexem {
@@ -76,34 +91,13 @@ public:
 	void print() const;
 };
 
-OPERATOR getOperatorByChar(char op) {
-	OPERATOR opertype;
-	switch(op) {
-		case ';':
-			opertype = EOL;
+OPERATOR getOperatorByName(string op) {
+	int oper_pos;
+	for (oper_pos = 0; oper_pos < OPERTEXT.size(); oper_pos++) {
+		if (OPERTEXT[oper_pos] == op)
 			break;
-		case '=':
-			opertype = EQUAL;
-			break;
-		case '+':
-			opertype = PLUS;
-			break;
-		case '-':
-			opertype = MINUS;
-			break;
-		case '*':
-			opertype = MULTIPLY;
-			break;
-		case '(':
-			opertype = LBRACKET;
-			break;
-		case ')':
-			opertype = RBRACKET;
-			break;
-		default:
-			opertype = PLUS;
 	}
-	return opertype;
+	return (OPERATOR) oper_pos;
 }
 
 Oper::Oper(OPERATOR type) {
@@ -111,30 +105,7 @@ Oper::Oper(OPERATOR type) {
 }
 
 void Oper::print() const{
-	switch (opertype) {
-		case EOL:
-			cout << ';';
-			break;
-		case EQUAL:
-			cout << '=';
-			break;
-		case PLUS:
-			cout << '+';
-			break;
-		case MINUS:
-			cout << '-';
-			break;
-		case MULTIPLY:
-			cout << '*';
-			break;
-		case LBRACKET:
-			cout << '(';
-			break;
-		case RBRACKET:
-			cout << ')';
-			break;
-	}
-	cout << " ";
+	cout << OPERTEXT[opertype] << " ";
 }
 
 int Oper::getValue(const Lexem & l_left, const Lexem & l_right, 
@@ -157,7 +128,7 @@ int Oper::getValue(const Lexem & l_left, const Lexem & l_right,
 	}
 
 	switch (opertype) {
-		case EQUAL:
+		case ASSIGN:
 			result = right;
 			if (l_left.getLexemType() == VAR) {
 				const Variable &v_left = static_cast<const Variable &>(l_left);
@@ -170,8 +141,17 @@ int Oper::getValue(const Lexem & l_left, const Lexem & l_right,
 		case MINUS:
 			result = left - right;
 			break;
-		case MULTIPLY:
+		case MULT:
 			result = left * right;
+			break;
+		case BITOR:
+			result = left | right;
+			break;
+		case XOR:
+			result = left ^ right;
+			break;
+		case BITAND:
+			result = left & right;
 			break;
 	}
 	return result;
@@ -187,7 +167,7 @@ enum ACCOCIATE { LEFT, RIGHT };
 
 bool checkPriority(const stack<Oper> & op_stack, const Oper *op) {
 	ACCOCIATE pos = LEFT;
-	if (op->getType() == EQUAL)
+	if (op->getType() == ASSIGN)
 		pos = RIGHT;
 	if (pos == LEFT)
 		return op->priority() <= op_stack.top().priority();
@@ -272,10 +252,73 @@ map<string, Variable *> evaluatePoliz(vector<Lexem *> poliz) {
 	return var_table;
 }
 
-bool isVarChar(char ch) {
-	return ((ch >= 'a' && ch <= 'z') || 
-		(ch >= 'A' && ch <= 'Z') ||
-		(ch >= '0' && ch <= '9'));
+bool isVariableChar(char ch) {
+	return ch == '_' || isalnum(ch);
+}
+
+bool isOperatorChar(char ch) {
+	for (auto oper : OPERTEXT) {
+		if (oper.find(ch) != std::string::npos)
+			return true;
+	}
+	return isalpha(ch);
+}
+
+bool skipSpace(const string & input, int & i, bool & has_eol) {
+	if (input[i] == NEWLINE) {
+		if (!has_eol) {
+			throw -1;
+		} else
+			has_eol = false;
+		i++;
+		return true;
+	}
+	if (input[i] == DELIMITER) {
+		i++;
+		return true;
+	}
+	return false;
+}
+
+Lexem *readNumber(const string & input, int & i) {
+	int value = 0;
+	while (isdigit(input[i]))
+		value = value * 10 + (input[i++] - '0');
+	return new Number(value);
+}
+
+bool isOperator(string word) {
+	for (auto elem : OPERTEXT) {
+		if (elem == word)
+			return true;
+	}
+	return false;
+}
+
+bool isVariable(string word) {
+	for (int i = 0; i < word.size(); i++) {
+		if (!isVariableChar(word[i]))
+			return false;
+	}
+	return true;
+}
+
+Lexem *wordToLexem(const string & input, int & i) {
+	string word;	
+	if (isOperatorChar(input[i])) {
+		while (isOperatorChar(input[i]))
+			word.push_back(input[i++]);
+		if (isOperator(word)) 
+			return new Oper(getOperatorByName(word));
+		if (isVariable(word))
+			return new Variable(word, 0);
+		throw WRONG_VAR;
+	}
+	while (isVariableChar(input[i]))
+		word.push_back(input[i++]);
+	if (isVariable(word))
+		return new Variable(word, 0);
+	throw WRONG_VAR;
 }
 
 vector<Lexem *> parseLexem(const string & input) {
@@ -283,41 +326,15 @@ vector<Lexem *> parseLexem(const string & input) {
 	bool has_eol = false;
 	for (int i = 0; i < input.size(); ) {
 		char ch = input[i];
-		if (ch == NEWLINE) {
-			if (!has_eol) {
-				throw -1;
-			} else
-				has_eol = false;
-			i++;
+		if (skipSpace(input, i, has_eol))
 			continue;
-		}
-		if (ch == DELIMITER) {
-			i++;
-			continue;
-		}
 		Lexem *cur_lex;
-		if (ch >= '0' && ch <= '9') {
-			int value = 0;
-			while (input[i] >= '0' && input[i] <= '9') {
-				value = value * 10 + (input[i] - '0');
-				i++;
-			}
-			cur_lex = new Number(value);
+		if (isdigit(ch)) {
+			cur_lex = readNumber(input, i);
 		} else {
-			// operator
-			if (OPER_SET.find(ch) != OPER_SET.end()) {
-				cur_lex = new Oper(getOperatorByChar(ch));
-				if (ch == SEMICOLON)
-					has_eol = true;
-				i++;
-			} else { //variable
-				string var_name;
-				while (ch != DELIMITER && isVarChar(ch)) {
-					var_name.push_back(ch);
-					ch = input[++i];
-				}
-				cur_lex = new Variable(var_name, 0);
-			}
+			cur_lex = wordToLexem(input, i);
+			if (ch == SEMICOLON)
+				has_eol = true;
 		}
 		v_lexem.push_back(cur_lex);
 	}
@@ -330,7 +347,6 @@ string getCode() {
 	return text;
 }
 
-
 int main() {
 	string input = getCode();
 	//cout << input;
@@ -340,8 +356,8 @@ int main() {
 		for (auto elem : parsed)
 			elem->print();
 		cout << endl;
-	} catch (int er_code) {
-		cout << "Error "<< er_code << ": semicolon is lost." << endl; 
+	} catch (ERROR_CODES er_code) {
+		cout << "Error "<< er_code << endl; 
 	}
 	vector<Lexem *> poliz = buildPoliz(parsed);
 	for (auto cur : poliz) {
