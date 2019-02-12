@@ -24,7 +24,7 @@ class Lexem {
 public:
 	Lexem() {}
 	virtual LEXEMTYPE getLexemType() const = 0;
-	//virtual int getValue() const = 0;
+	virtual int getValue() const = 0;
 	virtual void print() const = 0;
 };
 
@@ -84,7 +84,8 @@ class Oper: public Lexem {
 public:
 	Oper(OPERATOR type);
 	OPERATOR getType() const { return opertype; };
-	int getValue(const Lexem & l_left, const Lexem & l_right, 
+	int getValue() const { return 0; }
+	int getValue(const Lexem * l_left, const Lexem * l_right, 
 	             map<string, Variable *> & var_table) const;
 	LEXEMTYPE getLexemType() const { return OPER; };
 	int priority() const { return PRIORITY[opertype]; }
@@ -108,31 +109,17 @@ void Oper::print() const{
 	cout << OPERTEXT[opertype] << " ";
 }
 
-int Oper::getValue(const Lexem & l_left, const Lexem & l_right, 
+int Oper::getValue(const Lexem * l_left, const Lexem * l_right, 
                    map<string, Variable *> & var_table) const {
 	int result = 0;
-	int left, right;
-	if (l_left.getLexemType() == VAR) {
-		const Variable &v_left = static_cast<const Variable &>(l_left);
-		left = v_left.getValue();
-	} else {	
-		const Number &n_left = static_cast<const Number &>(l_left);
-		left = n_left.getValue();
-	}
-	if (l_right.getLexemType() == VAR) {
-		const Variable &v_right = static_cast<const Variable &>(l_right);
-		right = v_right.getValue();
-	} else {	
-		const Number &n_right = static_cast<const Number &>(l_right);
-		right = n_right.getValue();
-	}
 
+	int left = l_left->getValue(), right = l_right->getValue();
 	switch (opertype) {
 		case ASSIGN:
 			result = right;
-			if (l_left.getLexemType() == VAR) {
-				const Variable &v_left = static_cast<const Variable &>(l_left);
-				var_table.find(v_left.getName())->second->setValue(right);
+			if (l_left->getLexemType() == VAR) {
+				const Variable *v_left = static_cast<const Variable *>(l_left);
+				var_table[v_left->getName()]->setValue(right);
 			}
 			break;
 		case PLUS:
@@ -192,7 +179,8 @@ vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
 				op_stack.push(*op);
 			} else if (optype == RBRACKET) {
 				if (!op_stack.empty()) {
-					while (!op_stack.empty() && op_stack.top().getType() != LBRACKET) {
+					while (!op_stack.empty() && 
+						   op_stack.top().getType() != LBRACKET) {
 						poliz.push_back(popFromTop(op_stack));
 					}
 					op_stack.pop();
@@ -241,11 +229,11 @@ map<string, Variable *> evaluatePoliz(vector<Lexem *> poliz) {
 				// TODO: free stack
 				continue;
 			}
-			Lexem *val2 = values.top();
+			const Lexem *val2 = values.top();
 			values.pop();
-			Lexem *val1 = values.top();
+			const Lexem *val1 = values.top();
 			values.pop();
-			int result = op->getValue(*val1, *val2, var_table);
+			int result = op->getValue(val1, val2, var_table);
 			values.push(new Number(result));
 		}
 	}
@@ -258,7 +246,7 @@ bool isVariableChar(char ch) {
 
 bool isOperatorChar(char ch) {
 	for (auto oper : OPERTEXT) {
-		if (oper.find(ch) != std::string::npos)
+		if (oper.find(ch) != std::string::npos && ch != SEMICOLON)
 			return true;
 	}
 	return isalpha(ch);
@@ -267,7 +255,7 @@ bool isOperatorChar(char ch) {
 bool skipSpace(const string & input, int & i, bool & has_eol) {
 	if (input[i] == NEWLINE) {
 		if (!has_eol) {
-			throw -1;
+			throw LOST_SEMICOLON;
 		} else
 			has_eol = false;
 		i++;
@@ -305,6 +293,10 @@ bool isVariable(string word) {
 
 Lexem *wordToLexem(const string & input, int & i) {
 	string word;	
+	if (input[i] == SEMICOLON) {
+		i++;
+		return new Oper(getOperatorByName(";"));
+	}
 	if (isOperatorChar(input[i])) {
 		while (isOperatorChar(input[i]))
 			word.push_back(input[i++]);
@@ -312,12 +304,14 @@ Lexem *wordToLexem(const string & input, int & i) {
 			return new Oper(getOperatorByName(word));
 		if (isVariable(word))
 			return new Variable(word, 0);
+		cout << word;
 		throw WRONG_VAR;
 	}
 	while (isVariableChar(input[i]))
 		word.push_back(input[i++]);
 	if (isVariable(word))
 		return new Variable(word, 0);
+	cout << word;
 	throw WRONG_VAR;
 }
 
@@ -347,6 +341,19 @@ string getCode() {
 	return text;
 }
 
+void writeMessage(ERROR_CODES er_code) {
+	cout << "Error "<< er_code << ": ";
+	switch (er_code) {
+		case LOST_SEMICOLON:
+			cout << "lost semicolon.";
+			break;
+		case WRONG_VAR:
+			cout << "wrong variable name.";
+			break;
+	}
+	cout << endl;
+}
+
 int main() {
 	string input = getCode();
 	//cout << input;
@@ -357,7 +364,7 @@ int main() {
 			elem->print();
 		cout << endl;
 	} catch (ERROR_CODES er_code) {
-		cout << "Error "<< er_code << endl; 
+		writeMessage(er_code);
 	}
 	vector<Lexem *> poliz = buildPoliz(parsed);
 	for (auto cur : poliz) {
