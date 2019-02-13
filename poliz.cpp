@@ -116,66 +116,47 @@ int Oper::getValue(const Lexem * l_left, const Lexem * l_right,
 	
 	switch (opertype) {
 		case ASSIGN:
-			result = right;
 			if (l_left->getLexemType() == VAR) {
 				const Variable *v_left = static_cast<const Variable *>(l_left);
 				var_table[v_left->getName()]->setValue(right);
 			}
-			break;
+			return right;
 		case PLUS:
-			result = left + right;
-			break;
+			return left + right;
 		case MINUS:
-			result = left - right;
-			break;
+			return left - right;
 		case MULT:
-			result = left * right;
-			break;
+			return left * right;
 		case BITOR:
-			result = left | right;
-			break;
+			return left | right;
 		case XOR:
-			result = left ^ right;
-			break;
+			return left ^ right;
 		case BITAND:
-			result = left & right;
-			break;
+			return left & right;
 		case AND:
-			result = left && right;
-			break;
+			return left && right;
 		case OR:
-			result = left || right;
-			break;
+			return left || right;
 		case DIV:
-			result = left / right;
-			break;
+			return left / right;
 		case MOD:
-			result = left % right;
-			break;
+			return left % right;
 		case SHL:
-			result = left << right;
-			break;
+			return left << right;
 		case SHR:
-			result = left >> right;
-			break;
+			return left >> right;
 		case EQ:
-			result = left == right;
-			break;
+			return left == right;
 		case NEQ:
-			result = left != right;
-			break;
+			return left != right;
 		case LEQ:
-			result = left <= right;
-			break;
+			return left <= right;
 		case LT:
-			result = left < right;
-			break;
+			return left < right;
 		case GEQ:
-			result = left >= right;
-			break;
+			return left >= right;
 		case GT:
-			result = left > right;
-			break;
+			return left > right;
 	}
 	return result;
 }
@@ -195,6 +176,13 @@ bool checkPriority(const stack<Oper> & op_stack, const Oper *op) {
 	if (pos == LEFT)
 		return op->priority() <= op_stack.top().priority();
 	return op->priority() < op_stack.top().priority();
+}
+
+Lexem *copyLexem(Lexem *old_lexem) {
+	if (old_lexem->getLexemType() == NUM)
+		return new Number(old_lexem->getValue());
+	Variable *var = static_cast<Variable *>(old_lexem);
+	return new Variable(var->getName(), var->getValue());
 }
 
 vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
@@ -409,13 +397,11 @@ int main() {
 	cout << endl;
 	map<string, Variable *> var_table = evaluatePoliz(poliz);
 	printTable(var_table);
-	/*for (Lexem * elem : parsed) {
-		if (elem)
-			delete elem;
+	for (Lexem * elem : parsed) {
+		delete elem;
 	}
 	for (Lexem *elem : poliz) {
-		if (elem)
-			delete elem;
-	}*/
+		delete elem;
+	}
 	return 0;
 }
