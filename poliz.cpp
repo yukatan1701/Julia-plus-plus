@@ -112,8 +112,8 @@ void Oper::print() const{
 int Oper::getValue(const Lexem * l_left, const Lexem * l_right, 
                    map<string, Variable *> & var_table) const {
 	int result = 0;
-
 	int left = l_left->getValue(), right = l_right->getValue();
+	
 	switch (opertype) {
 		case ASSIGN:
 			result = right;
@@ -139,6 +139,42 @@ int Oper::getValue(const Lexem * l_left, const Lexem * l_right,
 			break;
 		case BITAND:
 			result = left & right;
+			break;
+		case AND:
+			result = left && right;
+			break;
+		case OR:
+			result = left || right;
+			break;
+		case DIV:
+			result = left / right;
+			break;
+		case MOD:
+			result = left % right;
+			break;
+		case SHL:
+			result = left << right;
+			break;
+		case SHR:
+			result = left >> right;
+			break;
+		case EQ:
+			result = left == right;
+			break;
+		case NEQ:
+			result = left != right;
+			break;
+		case LEQ:
+			result = left <= right;
+			break;
+		case LT:
+			result = left < right;
+			break;
+		case GEQ:
+			result = left >= right;
+			break;
+		case GT:
+			result = left > right;
 			break;
 	}
 	return result;
