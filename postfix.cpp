@@ -28,6 +28,7 @@ public:
 	virtual LEXEMTYPE getLexemType() const = 0;
 	virtual int getValue() const = 0;
 	virtual void print() const = 0;
+	virtual Lexem *copy() const = 0;
 };
 
 class Number: public Lexem {
@@ -37,10 +38,15 @@ public:
 	int getValue() const { return value; };
 	LEXEMTYPE getLexemType() const { return NUM; };
 	void print() const { cout << value << " "; };
+	Lexem *copy() const;
 };
 
 Number::Number(int val = 0) {
 	value = val;
+}
+
+Lexem * Number::copy() const {
+	return new Number(value);
 }
 
 const vector<string> OPERTEXT { ";", "=", "or", "and", "|", 
@@ -56,6 +62,8 @@ enum OPERATOR {
 	PLUS, MINUS, MULT, DIV, MOD,
 	LBRACKET, RBRACKET
 };
+
+enum OPERSTYLE { CHARS, WORD };
 
 int PRIORITY[] = {
 	0, 1, 2, 3, 4, 
@@ -79,7 +87,12 @@ public:
 	void setValue(int val) { value = val; }
 	LEXEMTYPE getLexemType() const { return VAR; }
 	void print() const { cout << "{" << name << "}" << " "; }
+	Lexem *copy() const;
 };
+
+Lexem * Variable::copy() const {
+	return new Variable(name, value);
+}
 
 class Operator: public Lexem {
 	OPERATOR opertype;
@@ -92,7 +105,12 @@ public:
 	LEXEMTYPE getLexemType() const { return OPER; };
 	int priority() const { return PRIORITY[opertype]; }
 	void print() const;
+	Lexem *copy() const;
 };
+
+Lexem * Operator::copy() const {
+	return new Operator(opertype);
+}
 
 OPERATOR getOperatorByName(string op) {
 	int oper_pos;
@@ -163,8 +181,6 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
 	return result;
 }
 
-
-
 class LexemVector {
 	vector<Lexem *> line;
 	bool isVariableChar(char) const;
@@ -176,9 +192,10 @@ class LexemVector {
 	Lexem *wordToLexem(const string &, int &) const;
 	Lexem *popFromTop(stack<Operator> &) const;
 	bool checkPriority(const stack<Operator> &, const Operator *) const;
-	Lexem *copyLexem(Lexem *) const;
+	OPERSTYLE style(const string &) const;
 public:
 	LexemVector() {};
+	LexemVector(string & input) { parseLexem(input); }
 	void parseLexem(const string & input);
 	LexemVector buildPostfix() const;
 	map<string, Variable *> evaluatePostfix() const;
@@ -226,34 +243,20 @@ bool LexemVector::checkPriority(const stack<Operator> & op_stack, const Operator
 	return op->priority() < op_stack.top().priority();
 }
 
-Lexem * LexemVector::copyLexem(Lexem *old_lexem) const {
-	LEXEMTYPE type = old_lexem->getLexemType();
-	if (type == NUM) {
-		Number *num = static_cast<Number *>(old_lexem);
-		return new Number(num->getValue());
-	}
-	else if (type == OPER) {
-		Operator *op = static_cast<Operator *>(old_lexem);
-		return new Operator(op->getType());
-	}
-	Variable *var = static_cast<Variable *>(old_lexem);
-	return new Variable(var->getName(), var->getValue());
-}
-
 LexemVector LexemVector::buildPostfix() const {
 	LexemVector postfix;
 	stack<Operator> op_stack;
 	for (Lexem *cur : line) {
 		LEXEMTYPE lextype = cur->getLexemType();
 		if (lextype == NUM || lextype == VAR) {
-			postfix.push_back(copyLexem(cur));
+			postfix.push_back(cur->copy());
 		} else {
 			Operator *op = static_cast<Operator *>(cur);
 			OPERATOR optype = op->getType();
 			if (optype == EOL) {
 				while (!op_stack.empty())
 					postfix.push_back(popFromTop(op_stack));
-				postfix.push_back(copyLexem(op));
+				postfix.push_back(op->copy());
 			} else if (optype == LBRACKET) {
 				op_stack.push(*op);
 			} else if (optype == RBRACKET) {
@@ -375,6 +378,12 @@ bool LexemVector::isVariable(const string & word) const {
 	return true;
 }
 
+OPERSTYLE LexemVector::style(const string & word) const {
+	if (isalpha(word[word.size() - 1]))
+		return WORD;
+	return CHARS;
+}
+
 Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
 	string word;	
 	if (input[i] == SEMICOLON) {
@@ -382,13 +391,36 @@ Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
 		return new Operator(getOperatorByName(";"));
 	}
 	if (isOperatorChar(input[i])) {
-		while (isOperatorChar(input[i]))
+		bool is_word = isalpha(input[i]);
+		bool is_prev_op = false;
+		OPERSTYLE last_style = is_word ? WORD : CHARS;
+		while (isOperatorChar(input[i])) {
 			word.push_back(input[i++]);
+			//cout << "[" << input[i] << "]" << word << style(word) << endl;
+			if (last_style != style(word)) {
+				//cout << "OK" << endl;
+				word.pop_back();
+				i--;
+				break;
+			}
+			last_style = style(word);
+			if (!is_word) {
+				if (isOperator(word)) {
+					is_prev_op = true;
+				} else {
+					if (is_prev_op) {
+						word.pop_back();
+						i--;
+						break;
+					}
+				}
+			}
+		}
 		if (isOperator(word)) 
 			return new Operator(getOperatorByName(word));
 		if (isVariable(word))
 			return new Variable(word, 0);
-		cout << word;
+		cout << word << "$";
 		throw WRONG_VAR;
 	}
 	while (isVariableChar(input[i]))
