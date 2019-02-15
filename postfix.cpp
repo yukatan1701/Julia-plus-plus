@@ -20,7 +20,7 @@ using std::istream;
 
 enum LEXEMTYPE { NUM, OPER, VAR };
 
-enum ERROR_CODES { LOST_SEMICOLON, WRONG_VAR };
+enum ERROR_CODES { WRONG_VAR, WRONG_LABEL };
 
 class Lexem {
 public:
@@ -49,35 +49,37 @@ Lexem * Number::copy() const {
 	return new Number(value);
 }
 
-const vector<string> OPERTEXT { ";", "=", "or", "and", "|", 
+const vector<string> OPERTEXT { "=", "or", "and", "|", 
                                 "^", "&", "==", "!=", "<", 
 								"<=", ">", ">=", "<<", ">>", 
 								"+", "-", "*", "/", "%",
-								"(", ")" };
+								"(", ")", ":", "goto"};
 
 enum OPERATOR {
-	EOL, ASSIGN, OR, AND, BITOR, 
+	ASSIGN, OR, AND, BITOR, 
 	XOR, BITAND, EQ, NEQ, LT,
 	LEQ, GT, GEQ, SHL, SHR,
 	PLUS, MINUS, MULT, DIV, MOD,
-	LBRACKET, RBRACKET
+	LBRACKET, RBRACKET, LABEL, GOTO
 };
 
 enum OPERSTYLE { CHARS, WORD };
 
 int PRIORITY[] = {
-	0, 1, 2, 3, 4, 
+	1, 2, 3, 4, 
 	5, 6, 7, 7, 8,
 	8, 8, 8, 9, 9,
 	10, 10, 11, 11, 11,
-	12, 12
+	12, 12, 13, 13
 };
+
+map<string, int> label_table;
 
 const char DELIMITER = ' ';
 const char NEWLINE = '\n';
-const char SEMICOLON = ';';
 
 class Variable: public Lexem {
+protected:
 	int value;
 	string name;
 public:
@@ -87,12 +89,12 @@ public:
 	void setValue(int val) { value = val; }
 	LEXEMTYPE getLexemType() const { return VAR; }
 	void print() const { cout << "{" << name << "}" << " "; }
-	Lexem *copy() const;
+	Lexem *copy() const { return new Variable(name, value); }
 };
 
-Lexem * Variable::copy() const {
-	return new Variable(name, value);
-}
+class Label: public Variable {
+	Label(string l_name, int address): Variable(l_name, address) {};
+};
 
 class Operator: public Lexem {
 	OPERATOR opertype;
@@ -104,9 +106,16 @@ public:
 	             map<string, Variable *> & var_table) const;
 	LEXEMTYPE getLexemType() const { return OPER; };
 	int priority() const { return PRIORITY[opertype]; }
+	bool isBinary() const;
 	void print() const;
 	Lexem *copy() const;
 };
+
+bool Operator::isBinary() const {
+	if (opertype == GOTO)
+		return false;
+	return true;
+}
 
 Lexem * Operator::copy() const {
 	return new Operator(opertype);
@@ -177,48 +186,48 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
 			return left >= right;
 		case GT:
 			return left > right;
+		case GOTO:
+			const Variable *label = static_cast<const Variable *>(l_left);
+			return label_table[label->getName()];
 	}
 	return result;
 }
 
 class LexemVector {
-	vector<Lexem *> line;
+	vector< vector<Lexem *> > lines;
 	bool isVariableChar(char) const;
 	bool isOperatorChar(char) const;
 	bool isVariable(const string &) const;
 	bool isOperator(const string &) const;
-	bool skipSpace(const string &, int &, bool &) const;
 	Lexem *readNumber(const string &, int &) const;
 	Lexem *wordToLexem(const string &, int &) const;
-	Lexem *popFromTop(stack<Operator> &) const;
-	bool checkPriority(const stack<Operator> &, const Operator *) const;
+	bool checkPriority(const stack<Operator *> &, const Operator *) const;
 	OPERSTYLE style(const string &) const;
 public:
 	LexemVector() {};
-	LexemVector(string & input) { parseLexem(input); }
 	void parseLexem(const string & input);
-	LexemVector buildPostfix() const;
+	void buildPostfix();
 	map<string, Variable *> evaluatePostfix() const;
-	void push_back(Lexem *lex);
 	void free();
 	~LexemVector();
 	friend ostream& operator<<(ostream &os, const LexemVector& lv);
 };
 
 ostream& operator<<(ostream &os, const LexemVector& lv) {
-	for (auto elem : lv.line)
-		elem->print();
+	for (auto line : lv.lines) {
+		for (auto elem : line)
+			elem->print();
+		cout << "; ";
+	}
 	cout << endl;
 }
 
-void LexemVector::push_back(Lexem *lex) {
-	line.push_back(lex);
-}
-
 void LexemVector::free() {
-	for (auto elem : line)
-		delete elem;
-	line.clear();
+	for (auto line : lines) {
+		for (auto elem : line)
+			delete elem;
+		line.clear();
+	}
 }
 
 LexemVector::~LexemVector() {
@@ -226,62 +235,62 @@ LexemVector::~LexemVector() {
 	free();
 }
 
-Lexem * LexemVector::popFromTop(stack<Operator> & op_stack) const {
-	OPERATOR type = op_stack.top().getType();
-	op_stack.pop();
-	return new Operator(type);
-}
-
 enum ACCOCIATE { LEFT, RIGHT };
 
-bool LexemVector::checkPriority(const stack<Operator> & op_stack, const Operator *op) const {
+bool LexemVector::checkPriority(const stack<Operator *> & op_stack, const Operator *op) const {
 	ACCOCIATE pos = LEFT;
 	if (op->getType() == ASSIGN)
 		pos = RIGHT;
 	if (pos == LEFT)
-		return op->priority() <= op_stack.top().priority();
-	return op->priority() < op_stack.top().priority();
+		return op->priority() <= op_stack.top()->priority();
+	return op->priority() < op_stack.top()->priority();
 }
 
-LexemVector LexemVector::buildPostfix() const {
-	LexemVector postfix;
-	stack<Operator> op_stack;
-	for (Lexem *cur : line) {
-		LEXEMTYPE lextype = cur->getLexemType();
-		if (lextype == NUM || lextype == VAR) {
-			postfix.push_back(cur->copy());
-		} else {
-			Operator *op = static_cast<Operator *>(cur);
-			OPERATOR optype = op->getType();
-			if (optype == EOL) {
-				while (!op_stack.empty())
-					postfix.push_back(popFromTop(op_stack));
-				postfix.push_back(op->copy());
-			} else if (optype == LBRACKET) {
-				op_stack.push(*op);
-			} else if (optype == RBRACKET) {
-				if (!op_stack.empty()) {
-					while (!op_stack.empty() && 
-						   op_stack.top().getType() != LBRACKET) {
-						postfix.push_back(popFromTop(op_stack));
-					}
-					op_stack.pop();
-				}
+void LexemVector::buildPostfix() {
+	for (int i = 0; i < lines.size(); i++) {
+		stack<Operator *> op_stack;
+		if (lines[i].empty())
+			continue;
+		vector<Lexem *> postfix;
+		for (Lexem *cur : lines[i]) {
+			LEXEMTYPE lextype = cur->getLexemType();
+			if (lextype == NUM || lextype == VAR) {
+				postfix.push_back(cur);
 			} else {
-				if (!op_stack.empty()) {
-					while(!op_stack.empty() 
-						  && checkPriority(op_stack, op)
-						  && op_stack.top().getType() != LBRACKET) {
-						postfix.push_back(popFromTop(op_stack));
+				Operator *op = static_cast<Operator *>(cur);
+				OPERATOR optype = op->getType();
+				if (optype == LBRACKET) {
+					op_stack.push(op);
+				} else if (optype == RBRACKET) {
+					if (!op_stack.empty()) {
+						while (!op_stack.empty() && 
+							   op_stack.top()->getType() != LBRACKET) {
+							postfix.push_back(op_stack.top());
+							op_stack.pop();
+						}
+						op_stack.pop();
 					}
+				} else {
+					if (!op_stack.empty()) {
+						while(!op_stack.empty() 
+							  && checkPriority(op_stack, op)
+							  && op_stack.top()->getType() != LBRACKET) {
+							postfix.push_back(op_stack.top());
+							op_stack.pop();
+						}
+					}
+					op_stack.push(op);
 				}
-				op_stack.push(*op);
 			}
 		}
+		while (!op_stack.empty()) {
+			postfix.push_back(op_stack.top());
+			op_stack.pop();
+		}
+		lines[i] = postfix;
 		//cout << "Stack size: " << op_stack.size() << endl;
 		//cout << "Postfix size: " << postfix.size() << endl;
 	}
-	return postfix;
 }
 
 void printTable(const map<string, Variable *> & var_table) {
@@ -292,34 +301,58 @@ void printTable(const map<string, Variable *> & var_table) {
 	}
 }
 
+void printLabelTable(const map<string, int> & label_table) {
+	cout << endl << "Label\t" << "| Address:" << endl;
+	cout << "----------------" << endl;
+	for (auto it = label_table.cbegin(); it != label_table.cend(); it++) {
+		cout << it->first << "\t| " << it->second << endl;
+	}
+}
+
 map<string, Variable *> LexemVector::evaluatePostfix() const {
 	map<string, Variable *> var_table;
-	if (line.size() == 0)
+	if (lines.size() == 0)
 		return var_table;
-	stack<Lexem *> values;
 	vector<Lexem *> temporary;
-	for (Lexem *cur : line) {
-		LEXEMTYPE lextype = cur->getLexemType();
-		if (lextype == NUM) {
-			values.push(cur);
-		} else if (lextype == VAR) {
-			Variable *var = static_cast<Variable *>(cur);
-			var_table.insert(pair<string, Variable *>(var->getName(), var));
-			values.push(var_table.find(var->getName())->second);
-		} else {
-			Operator *op = static_cast<Operator *>(cur);
-			if (op->getType() == EOL) {
-				// TODO: free stack
-				continue;
+	for (int i = 0; i < lines.size(); ) {
+		stack<Lexem *> values;
+		if (lines[i].empty()) {
+			i++;
+			continue;
+		}
+		const vector<Lexem *> & cur_line = lines[i++];
+		for (Lexem *cur : cur_line) {
+			LEXEMTYPE lextype = cur->getLexemType();
+			if (lextype == NUM) {
+				values.push(cur);
+			} else if (lextype == VAR) {
+				Variable *var = static_cast<Variable *>(cur);
+				var_table.insert(pair<string, Variable *>(var->getName(), var));
+				values.push(var_table.find(var->getName())->second);
+			} else {
+				Operator *op = static_cast<Operator *>(cur);
+				/*if (op->getType() == EOL) {
+					// TODO: free stack
+					continue;
+				}*/
+				const Lexem *val2 = values.top();
+				values.pop();
+				int result = 0;
+				if (op->isBinary()) {
+					const Lexem *val1 = values.top();
+					values.pop();
+					result = op->getValue(val1, val2, var_table);
+				} else {
+					result = op->getValue(val2, val2, var_table);
+				}
+				if (op->getType() == GOTO) {
+					i = result;
+					break;
+				}
+				Lexem *res = new Number(result);
+				values.push(res);
+				temporary.push_back(res);
 			}
-			const Lexem *val2 = values.top();
-			values.pop();
-			const Lexem *val1 = values.top();
-			values.pop();
-			int result = op->getValue(val1, val2, var_table);
-			Lexem *res = new Number(result);
-			values.push(res);
-			temporary.push_back(res);
 		}
 	}
 	for (auto elem : temporary)
@@ -333,26 +366,10 @@ bool LexemVector::isVariableChar(char ch) const {
 
 bool LexemVector::isOperatorChar(char ch) const {
 	for (auto oper : OPERTEXT) {
-		if (oper.find(ch) != std::string::npos && ch != SEMICOLON)
+		if (oper.find(ch) != std::string::npos)
 			return true;
 	}
 	return isalpha(ch);
-}
-
-bool LexemVector::skipSpace(const string & input, int & i, bool & has_eol) const {
-	if (input[i] == NEWLINE) {
-		if (!has_eol) {
-			throw LOST_SEMICOLON;
-		} else
-			has_eol = false;
-		i++;
-		return true;
-	}
-	if (input[i] == DELIMITER) {
-		i++;
-		return true;
-	}
-	return false;
 }
 
 Lexem * LexemVector::readNumber(const string & input, int & i) const {
@@ -386,10 +403,6 @@ OPERSTYLE LexemVector::style(const string & word) const {
 
 Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
 	string word;	
-	if (input[i] == SEMICOLON) {
-		i++;
-		return new Operator(getOperatorByName(";"));
-	}
 	if (isOperatorChar(input[i])) {
 		bool is_word = isalpha(input[i]);
 		bool is_prev_op = false;
@@ -432,21 +445,33 @@ Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
 }
 
 void LexemVector::parseLexem(const string & input) {
-	bool has_eol = false;
+	vector<Lexem *> line;
 	for (int i = 0; i < input.size(); ) {
 		char ch = input[i];
-		if (skipSpace(input, i, has_eol))
-			continue;
+		while (input[i] == DELIMITER)
+			ch = input[++i];
 		Lexem *cur_lex;
 		if (isdigit(ch)) {
 			cur_lex = readNumber(input, i);
 		} else {
 			cur_lex = wordToLexem(input, i);
-			if (ch == SEMICOLON)
-				has_eol = true;
+			// add label
+			if (ch == ':') {
+				Lexem *last_lex = line[line.size() - 1];
+				if (last_lex->getLexemType() != VAR) {
+					throw WRONG_LABEL;
+				}
+				Variable *last_var = static_cast<Variable *>(last_lex);
+				label_table[last_var->getName()] = i;
+				line.pop_back();
+				delete last_lex;
+				delete cur_lex;
+				continue;
+			}
 		}
 		line.push_back(cur_lex);
 	}
+	lines.push_back(line);
 }
 
 string getCode() {
@@ -458,30 +483,32 @@ string getCode() {
 void writeMessage(ERROR_CODES er_code) {
 	cout << "Error "<< er_code << ": ";
 	switch (er_code) {
-		case LOST_SEMICOLON:
-			cout << "lost semicolon.";
-			break;
 		case WRONG_VAR:
 			cout << "wrong variable name.";
+			break;
+		case WRONG_LABEL:
+			cout << "wrong label definition.";
 			break;
 	}
 	cout << endl;
 }
 
 int main() {
-	string input = getCode();
+	string input;
 	//cout << input;
-	LexemVector line;
+	LexemVector code;
 	try {
-		line.parseLexem(input);
-		cout << line;
+		while (getline(cin, input))
+			code.parseLexem(input);
+		cout << "\nInfix:\n" << code;
+		code.buildPostfix();
+		cout << "\nPostfix:\n" << code;
+		//code.free();
+		printLabelTable(label_table);
+		map<string, Variable *> var_table = code.evaluatePostfix();
+		printTable(var_table);
 	} catch (ERROR_CODES er_code) {
 		writeMessage(er_code);
 	}
-	LexemVector postfix = line.buildPostfix();
-	line.free();
-	cout << postfix;
-	map<string, Variable *> var_table = postfix.evaluatePostfix();
-	printTable(var_table);
 	return 0;
 }
