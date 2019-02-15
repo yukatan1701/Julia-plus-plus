@@ -20,7 +20,7 @@ using std::istream;
 
 enum LEXEMTYPE { NUM, OPER, VAR };
 
-enum ERROR_CODES { WRONG_VAR, WRONG_LABEL };
+enum ERROR_CODES { WRONG_VAR, WRONG_LABEL, GOTO_DEF_ERROR };
 
 class Lexem {
 public:
@@ -97,6 +97,7 @@ class Label: public Variable {
 };
 
 class Operator: public Lexem {
+protected:
 	OPERATOR opertype;
 public:
 	Operator(OPERATOR type);
@@ -106,16 +107,19 @@ public:
 	             map<string, Variable *> & var_table) const;
 	LEXEMTYPE getLexemType() const { return OPER; };
 	int priority() const { return PRIORITY[opertype]; }
-	bool isBinary() const;
+	virtual bool isBinary() const { return true; }
 	void print() const;
 	Lexem *copy() const;
 };
 
-bool Operator::isBinary() const {
-	if (opertype == GOTO)
-		return false;
-	return true;
-}
+class Goto: public Operator {
+	int address;
+public:
+	Goto(int addr) : Operator(GOTO) { address = addr; }
+	void print() const { cout << "goto[" << address << "] "; }
+	int getAddress() const { return address; }
+	bool isBinary() const { return false; }
+};
 
 Lexem * Operator::copy() const {
 	return new Operator(opertype);
@@ -186,9 +190,9 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
 			return left >= right;
 		case GT:
 			return left > right;
-		case GOTO:
-			const Variable *label = static_cast<const Variable *>(l_left);
-			return label_table[label->getName()];
+		//case GOTO:
+		//	const Variable *label = static_cast<const Variable *>(l_left);
+		//	return label_table[label->getName()];
 	}
 	return result;
 }
@@ -206,6 +210,7 @@ class LexemVector {
 public:
 	LexemVector() {};
 	void parseLexem(const string & input);
+	void checkGoto();
 	void buildPostfix();
 	map<string, Variable *> evaluatePostfix() const;
 	void free();
@@ -331,10 +336,16 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 				values.push(var_table.find(var->getName())->second);
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
+			//	op->print();
 				/*if (op->getType() == EOL) {
 					// TODO: free stack
 					continue;
 				}*/
+				if (op->getType() == GOTO) {
+					Goto *gt = static_cast<Goto *>(op);
+					i = gt->getAddress();
+					break;
+				}
 				const Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
@@ -343,11 +354,7 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 					values.pop();
 					result = op->getValue(val1, val2, var_table);
 				} else {
-					result = op->getValue(val2, val2, var_table);
-				}
-				if (op->getType() == GOTO) {
-					i = result;
-					break;
+				
 				}
 				Lexem *res = new Number(result);
 				values.push(res);
@@ -474,10 +481,32 @@ void LexemVector::parseLexem(const string & input) {
 	lines.push_back(line);
 }
 
-string getCode() {
-	string text; 
-	getline(cin, text, (char) EOF);
-	return text;
+void LexemVector::checkGoto() {
+	for (int j = 0; j < lines.size(); j++) {
+		vector<Lexem *> & line = lines[j];
+		Lexem *lexem;
+		int n = line.size();
+		for (int i = 0; i < n; i++) {
+			lexem = line[i];
+			if (lexem->getLexemType() == OPER) {
+				Operator *op = static_cast<Operator *>(lexem);
+				if (op->getType() == GOTO) {
+					if (i < n - 1 && line[i + 1]->getLexemType() == VAR) {
+						Variable *addr = static_cast<Variable *>(line[i + 1]);
+						if (label_table.find(addr->getName()) == label_table.end())
+							throw GOTO_DEF_ERROR;
+						Goto *gt = new Goto(label_table[addr->getName()]);
+						delete op;
+						delete addr;
+						line.resize(n - 2);
+						line.push_back(gt);
+						break;
+					} else
+						throw GOTO_DEF_ERROR;
+				}
+			}
+		}
+	}
 }
 
 void writeMessage(ERROR_CODES er_code) {
@@ -489,17 +518,20 @@ void writeMessage(ERROR_CODES er_code) {
 		case WRONG_LABEL:
 			cout << "wrong label definition.";
 			break;
+		case GOTO_DEF_ERROR:
+			cout << "wrong goto definition.";
+			break;
 	}
 	cout << endl;
 }
 
 int main() {
 	string input;
-	//cout << input;
 	LexemVector code;
 	try {
 		while (getline(cin, input))
 			code.parseLexem(input);
+		code.checkGoto();
 		cout << "\nInfix:\n" << code;
 		code.buildPostfix();
 		cout << "\nPostfix:\n" << code;
