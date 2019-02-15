@@ -49,13 +49,16 @@ Lexem * Number::copy() const {
 	return new Number(value);
 }
 
-const vector<string> OPERTEXT { "=", "or", "and", "|", 
+const vector<string> OPERTEXT { "if", "then", "else", "endif",
+								"=", "or", "and", "|", 
                                 "^", "&", "==", "!=", "<", 
 								"<=", ">", ">=", "<<", ">>", 
 								"+", "-", "*", "/", "%",
-								"(", ")", ":", "goto"};
+								"(", ")", ":", "goto"
+								};
 
 enum OPERATOR {
+	IF, THEN, ELSE, ENDIF,
 	ASSIGN, OR, AND, BITOR, 
 	XOR, BITAND, EQ, NEQ, LT,
 	LEQ, GT, GEQ, SHL, SHR,
@@ -66,11 +69,12 @@ enum OPERATOR {
 enum OPERSTYLE { CHARS, WORD };
 
 int PRIORITY[] = {
+	-1, -1, -1, -1,
 	1, 2, 3, 4, 
 	5, 6, 7, 7, 8,
 	8, 8, 8, 9, 9,
 	10, 10, 11, 11, 11,
-	12, 12, 13, 13
+	12, 12, 13, 13, 13
 };
 
 map<string, int> label_table;
@@ -119,6 +123,18 @@ public:
 	void print() const { cout << "goto[" << address << "] "; }
 	int getAddress() const { return address; }
 	bool isBinary() const { return false; }
+};
+
+class If: public Operator {
+	int else_addr;
+	int endif;
+public:
+	If() : Operator(IF) { else_addr = -1; endif = -1; }
+	int getEndif() const { return endif; }
+	int getElse() const { return else_addr; }
+	void setEndif(int addr) { endif = addr; }
+	void setElse(int addr) { else_addr = addr; }
+	void print() const { cout << "if[$] "; }
 };
 
 Lexem * Operator::copy() const {
@@ -211,6 +227,7 @@ public:
 	LexemVector() {};
 	void parseLexem(const string & input);
 	void checkGoto();
+	void checkIf();
 	void buildPostfix();
 	map<string, Variable *> evaluatePostfix() const;
 	void free();
@@ -336,19 +353,27 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 				values.push(var_table.find(var->getName())->second);
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
-			//	op->print();
-				/*if (op->getType() == EOL) {
-					// TODO: free stack
-					continue;
-				}*/
 				if (op->getType() == GOTO) {
 					Goto *gt = static_cast<Goto *>(op);
 					i = gt->getAddress();
 					break;
 				}
+				if (op->getType() == ENDIF)
+					continue;
 				const Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
+				if (op->getType() == IF) {
+					If *opif = static_cast<If *>(op);
+					int cond = val2->getValue();
+					if (cond == 0) {
+						if (opif->getElse() == -1)
+							i = opif->getEndif();
+						else
+							i = opif->getElse();
+					}
+					break;
+				}
 				if (op->isBinary()) {
 					const Lexem *val1 = values.top();
 					values.pop();
@@ -509,6 +534,45 @@ void LexemVector::checkGoto() {
 	}
 }
 
+void LexemVector::checkIf() {
+	stack<If *> ifstack;
+	for (int j = 0; j < lines.size(); j++) {
+		vector<Lexem *> & line = lines[j];
+		Lexem *lexem;
+		int n = line.size();
+		for (int i = 0; i < n; i++) {
+			lexem = line[i];
+			if (lexem->getLexemType() == OPER) {
+				Operator *op = static_cast<Operator *>(lexem);
+				//op->print();
+				//cout << endl;
+				OPERATOR type = op->getType();
+				if (type == IF) {
+					If *ifop = new If();
+					delete op;
+					line[i] = ifop;
+					ifstack.push(ifop);
+				} else if (type == THEN) {
+					delete op;
+					line.pop_back();
+				} else if (type == ELSE) {
+					ifstack.top()->setElse(j + 1);
+					delete op;
+					line.clear();
+				} else if (type == ENDIF) {
+					If *top = ifstack.top();
+					top->setEndif(i);
+					if (top->getElse() > 0) {
+						Goto *else_goto = new Goto(j);
+						lines[top->getElse() - 1].push_back(else_goto);
+					}
+					ifstack.pop();
+				}
+			}
+		}
+	}
+}
+
 void writeMessage(ERROR_CODES er_code) {
 	cout << "Error "<< er_code << ": ";
 	switch (er_code) {
@@ -534,8 +598,8 @@ int main() {
 		code.checkGoto();
 		cout << "\nInfix:\n" << code;
 		code.buildPostfix();
+		code.checkIf();
 		cout << "\nPostfix:\n" << code;
-		//code.free();
 		printLabelTable(label_table);
 		map<string, Variable *> var_table = code.evaluatePostfix();
 		printTable(var_table);
