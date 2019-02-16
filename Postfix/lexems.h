@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+#define YELLOW  "\033[1;33m"
+#define BLUE    "\033[1;36m"
+#define RESET   "\033[0m"
+
 using std::vector;
 using std::map;
 using std::cin;

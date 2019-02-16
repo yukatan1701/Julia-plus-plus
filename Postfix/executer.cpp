@@ -66,8 +66,9 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 }
 
 void Executer::printVariables() const {
-	cout << endl << "Var\t" << "| Value:" << endl;
-	cout << "----------------" << endl;
+	cout << endl << BLUE << "Var\t" << RESET << "| " 
+	     << BLUE << "Value" << RESET << endl;
+	cout << "--------+--------" << endl;
 	for (auto it = var_table.cbegin(); it != var_table.cend(); it++) {
 		cout << it->first << "\t| " << it->second->getValue() << endl;
 	}

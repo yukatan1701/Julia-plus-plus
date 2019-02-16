@@ -14,3 +14,6 @@ while i <= size then
 	i = i + 1
 	newline
 endwhile
+goto END
+x = 9
+END:

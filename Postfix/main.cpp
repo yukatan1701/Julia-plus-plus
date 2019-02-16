@@ -27,13 +27,13 @@ int main() {
 	LexemVector code;
 	try {
 		LexicalAnalyzer la(code);
-		cout << "\nInfix:\n" << code;
-		la.printLabels();
+		cout << BLUE << "Infix:\n" << RESET << code << endl;
 		SyntaxAnalyzer sa(la, code);
-		cout << "\nPostfix:\n" << code;
-		cout << endl << "---EXECUTION---" << endl;
+		cout << BLUE << "Postfix:\n" << RESET << code << endl;
+		cout << YELLOW << "-----------EXECUTION-----------" << RESET << endl;
 		Executer ex(sa, code);
-		cout << endl << "---------------" << endl;
+		cout << YELLOW << endl << "-------------------------------" << RESET << endl;
+		la.printLabels();
 		ex.printVariables();
 	} catch (ERROR_CODES er_code) {
 		writeMessage(er_code);

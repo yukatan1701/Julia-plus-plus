@@ -6,12 +6,13 @@ while i <= size then
 		print j
 		space
 		print i
-		p = i * j
 		space
-		print p
+		print i * j
 		newline
 		j = j + 1
 	endwhile
 	i = i + 1
 	newline
 endwhile
+END:
+x = 8

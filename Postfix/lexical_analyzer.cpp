@@ -122,7 +122,7 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 					throw WRONG_LABEL;
 				}
 				Variable *last_var = static_cast<Variable *>(last_lex);
-				label_table[last_var->getName()] = i;
+				label_table[last_var->getName()] = lv.lines.size() - 1;
 				line.pop_back();
 				delete last_lex;
 				delete cur_lex;
@@ -246,8 +246,9 @@ void LexicalAnalyzer::runAnalyzer(LexemVector & lv) {
 }
 
 void LexicalAnalyzer::printLabels() const {
-	cout << endl << "Label\t" << "| Address" << endl;
-	cout << "----------------" << endl;
+	cout << endl << BLUE << "Label\t" << RESET << "| " 
+	     << BLUE << "Address" << RESET << endl;
+	cout << "--------+--------" << endl;
 	for (auto it = label_table.cbegin(); it != label_table.cend(); it++) {
 		cout << it->first << "\t| " << it->second << endl;
 	}
