@@ -50,6 +50,7 @@ Lexem * Number::copy() const {
 }
 
 const vector<string> OPERTEXT { "if", "then", "else", "endif",
+								"while", "endwhile",
 								"=", "or", "and", "|", 
                                 "^", "&", "==", "!=", "<", 
 								"<=", ">", ">=", "<<", ">>", 
@@ -59,6 +60,7 @@ const vector<string> OPERTEXT { "if", "then", "else", "endif",
 
 enum OPERATOR {
 	IF, THEN, ELSE, ENDIF,
+	WHILE, ENDWHILE,
 	ASSIGN, OR, AND, BITOR, 
 	XOR, BITAND, EQ, NEQ, LT,
 	LEQ, GT, GEQ, SHL, SHR,
@@ -70,6 +72,7 @@ enum OPERSTYLE { CHARS, WORD };
 
 int PRIORITY[] = {
 	-1, -1, -1, -1,
+	-1, -1,
 	1, 2, 3, 4, 
 	5, 6, 7, 7, 8,
 	8, 8, 8, 9, 9,
@@ -81,6 +84,7 @@ map<string, int> label_table;
 
 const char DELIMITER = ' ';
 const char NEWLINE = '\n';
+const char TAB = '\t';
 
 class Variable: public Lexem {
 protected:
@@ -127,12 +131,9 @@ public:
 
 class If: public Operator {
 	int else_addr;
-	int endif;
 public:
-	If() : Operator(IF) { else_addr = -1; endif = -1; }
-	int getEndif() const { return endif; }
+	If() : Operator(IF) { else_addr = -1; }
 	int getElse() const { return else_addr; }
-	void setEndif(int addr) { endif = addr; }
 	void setElse(int addr) { else_addr = addr; }
 	void print() const { cout << "if[$] "; }
 };
@@ -224,10 +225,14 @@ class LexemVector {
 	bool checkPriority(const stack<Operator *> &, const Operator *) const;
 	OPERSTYLE style(const string &) const;
 public:
-	LexemVector() {};
+	LexemVector() {
+			vector<Lexem *> code_end;
+			lines.push_back(code_end); 
+		}
 	void parseLexem(const string & input);
 	void checkGoto();
 	void checkIf();
+	void checkWhile();
 	void buildPostfix();
 	map<string, Variable *> evaluatePostfix() const;
 	void free();
@@ -366,12 +371,8 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 				if (op->getType() == IF) {
 					If *opif = static_cast<If *>(op);
 					int cond = val2->getValue();
-					if (cond == 0) {
-						if (opif->getElse() == -1)
-							i = opif->getEndif();
-						else
-							i = opif->getElse();
-					}
+					if (cond == 0)
+						i = opif->getElse();
 					break;
 				}
 				if (op->isBinary()) {
@@ -480,8 +481,10 @@ void LexemVector::parseLexem(const string & input) {
 	vector<Lexem *> line;
 	for (int i = 0; i < input.size(); ) {
 		char ch = input[i];
-		while (input[i] == DELIMITER)
+		if (input[i] == DELIMITER || input[i] == TAB) {
 			ch = input[++i];
+			continue;
+		}
 		Lexem *cur_lex;
 		if (isdigit(ch)) {
 			cur_lex = readNumber(input, i);
@@ -503,7 +506,9 @@ void LexemVector::parseLexem(const string & input) {
 		}
 		line.push_back(cur_lex);
 	}
-	lines.push_back(line);
+	lines[lines.size() - 1] = line;	
+	vector<Lexem *> empty;
+	lines.push_back(empty);
 }
 
 void LexemVector::checkGoto() {
@@ -544,8 +549,6 @@ void LexemVector::checkIf() {
 			lexem = line[i];
 			if (lexem->getLexemType() == OPER) {
 				Operator *op = static_cast<Operator *>(lexem);
-				//op->print();
-				//cout << endl;
 				OPERATOR type = op->getType();
 				if (type == IF) {
 					If *ifop = new If();
@@ -561,12 +564,47 @@ void LexemVector::checkIf() {
 					line.clear();
 				} else if (type == ENDIF) {
 					If *top = ifstack.top();
-					top->setEndif(i);
-					if (top->getElse() > 0) {
+					if (top->getElse() > -1) {
 						Goto *else_goto = new Goto(j);
 						lines[top->getElse() - 1].push_back(else_goto);
 					}
 					ifstack.pop();
+				}
+			}
+		}
+	}
+}
+
+void LexemVector::checkWhile() {
+	stack<If *> whstack;
+	stack<int> whline;
+	for (int j = 0; j < lines.size(); j++) {
+		vector<Lexem *> & line = lines[j];
+		Lexem *lexem;
+		int n = line.size();
+		for (int i = 0; i < n; i++) {
+			lexem = line[i];
+			if (lexem->getLexemType() == OPER) {
+				Operator *op = static_cast<Operator *>(lexem);
+				OPERATOR type = op->getType();
+				if (type == WHILE) {
+					If *ifop = new If();
+					delete op;
+					line[i] = ifop;
+					whstack.push(ifop);
+					whline.push(j);
+				} else if (type == THEN) {
+					delete op;
+					line.pop_back();
+				} else if (type == ENDWHILE) {
+					If *top = whstack.top();
+					int whi = whline.top();
+					Goto *gt = new Goto(whi);
+					top->setElse(j + 1);
+					whstack.pop();
+					whline.pop();
+					delete op;
+					line[i] = gt;
 				}
 			}
 		}
@@ -596,9 +634,10 @@ int main() {
 		while (getline(cin, input))
 			code.parseLexem(input);
 		code.checkGoto();
+		code.checkIf();
 		cout << "\nInfix:\n" << code;
 		code.buildPostfix();
-		code.checkIf();
+		code.checkWhile();
 		cout << "\nPostfix:\n" << code;
 		printLabelTable(label_table);
 		map<string, Variable *> var_table = code.evaluatePostfix();
