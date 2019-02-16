@@ -17,7 +17,8 @@ enum LEXEMTYPE { NUM, OPER, VAR };
 
 enum ERROR_CODES { WRONG_VAR, WRONG_LABEL, GOTO_DEF_ERROR };
 
-const vector<string> OPERTEXT { "if", "then", "else", "endif",
+const vector<string> OPERTEXT { "print", "newline", "space",
+								"if", "then", "else", "endif",
 								"while", "endwhile",
 								"=", "or", "and", "|", 
                                 "^", "&", "==", "!=", "<", 
@@ -27,6 +28,7 @@ const vector<string> OPERTEXT { "if", "then", "else", "endif",
 								};
 
 enum OPERATOR {
+	PRINT, NEWLINE, SPACE,
 	IF, THEN, ELSE, ENDIF,
 	WHILE, ENDWHILE,
 	ASSIGN, OR, AND, BITOR, 
@@ -36,7 +38,16 @@ enum OPERATOR {
 	LBRACKET, RBRACKET, LABEL, GOTO
 };
 
-extern int PRIORITY[];
+const int PRIORITY[] = {
+	-1, -1, -1,
+	-1, -1, -1, -1,
+	-1, -1,
+	1, 2, 3, 4, 
+	5, 6, 7, 7, 8,
+	8, 8, 8, 9, 9,
+	10, 10, 11, 11, 11,
+	12, 12, 13, 13, 13
+};
 
 class Lexem {
 public:
@@ -86,7 +97,7 @@ public:
 	             map<string, Variable *> & var_table) const;
 	LEXEMTYPE getLexemType() const { return OPER; }
 	int priority() const;
-	virtual bool isBinary() const { return true; }
+	virtual bool isBinary() const;
 	void print() const;
 	Lexem *copy() const;
 };

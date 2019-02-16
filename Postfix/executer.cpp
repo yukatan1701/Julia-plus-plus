@@ -30,6 +30,14 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				}
 				if (op->getType() == ENDIF)
 					continue;
+				if (op->getType() == NEWLINE) {
+					cout << endl;
+					continue;		
+				}
+				if (op->getType() == SPACE) {
+					cout << " ";
+					continue;		
+				}
 				const Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
@@ -40,13 +48,13 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 						i = opif->getElse();
 					break;
 				}
-				if (op->isBinary()) {
-					const Lexem *val1 = values.top();
-					values.pop();
-					result = op->getValue(val1, val2, var_table);
-				} else {
-				
+				if (!op->isBinary()) {
+					result = op->getValue(val2, val2, var_table);
+					continue;	
 				}
+				const Lexem *val1 = values.top();
+				values.pop();
+				result = op->getValue(val1, val2, var_table);
 				Lexem *res = new Number(result);
 				values.push(res);
 				temporary.push_back(res);

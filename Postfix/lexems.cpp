@@ -16,6 +16,13 @@ Operator::Operator(OPERATOR type) {
 	opertype = type;
 }
 
+bool Operator::isBinary() const {
+	const string &name = OPERTEXT[opertype];
+	if (name == "print")
+		return false;
+	return true;
+}
+
 void Operator::print() const {
 	cout << OPERTEXT[opertype] << " ";
 }
@@ -72,6 +79,12 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
 			return left >= right;
 		case GT:
 			return left > right;
+		case PRINT:
+			cout << left;
+			return 0;
+		case NEWLINE:
+			cout << endl;
+			return 0;
 	}
 	return result;
 }

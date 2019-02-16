@@ -3,7 +3,6 @@
 extern const vector<string> OPERTEXT;
 
 const char DELIMITER = ' ';
-const char NEWLINE = '\n';
 const char TAB = '\t';
 
 LexicalAnalyzer::LexicalAnalyzer(LexemVector & lv) {

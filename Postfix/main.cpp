@@ -7,16 +7,6 @@ using std::cin;
 using std::cout;
 using std::endl;
 
-int PRIORITY[] = {
-	-1, -1, -1, -1,
-	-1, -1,
-	1, 2, 3, 4, 
-	5, 6, 7, 7, 8,
-	8, 8, 8, 9, 9,
-	10, 10, 11, 11, 11,
-	12, 12, 13, 13, 13
-};
-
 void writeMessage(ERROR_CODES er_code) {
 	cout << "Error "<< er_code << ": ";
 	switch (er_code) {
@@ -41,7 +31,9 @@ int main() {
 		la.printLabels();
 		SyntaxAnalyzer sa(la, code);
 		cout << "\nPostfix:\n" << code;
+		cout << endl << "---EXECUTION---" << endl;
 		Executer ex(sa, code);
+		cout << endl << "---------------" << endl;
 		ex.printVariables();
 	} catch (ERROR_CODES er_code) {
 		writeMessage(er_code);
