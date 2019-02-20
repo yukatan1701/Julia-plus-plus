@@ -44,7 +44,6 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
 			} else if (l_left->getLexemType() == REF) {
 				const Reference *r_left = static_cast<const Reference *>(l_left);
 				int & dest = r_left->getReference();
-				dest = right;
 			}
 			return right;
 		case PLUS:

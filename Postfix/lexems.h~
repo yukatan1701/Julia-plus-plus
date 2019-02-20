@@ -98,7 +98,6 @@ class Reference: public Variable {
 public:
 	Reference(string name, int & dest) : Variable(name, 0), arr_val(dest) {}
 	int getValue() const { return arr_val; }
-	int & getReference() const { return arr_val; }
 	LEXEMTYPE getLexemType() const { return REF; }
 };
 

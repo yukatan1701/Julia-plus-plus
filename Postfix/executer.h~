@@ -18,7 +18,6 @@ private:
 	void evaluatePostfix(LexemVector & lv);
 public:
 	Executer(const SyntaxAnalyzer & sa, LexemVector & lv);
-	~Executer();
 	void printVariables() const;
 	void printArrays() const;
 };

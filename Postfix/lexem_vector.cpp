@@ -23,6 +23,6 @@ void LexemVector::free() {
 }
 
 LexemVector::~LexemVector() {
-	cout << "Destructor." << endl;
+	//cout << "Destructor." << endl;
 	free();
 }

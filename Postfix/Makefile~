@@ -1,7 +1,14 @@
-all: hello
+CC=g++
 
-hello:
-	g++ main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp -c -o $@ -std=c++11 -fmax-errors=5
+CFLAGS=-std=c++11 -fmax-errors=5
+
+all: postfix
+
+postfix:
+	$(CC) main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp -o postfix $(CFLAGS)
+
+clean:
+	rm -rf *.o postfix
 
 	
 

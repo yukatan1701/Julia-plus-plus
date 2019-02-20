@@ -1,0 +1,15 @@
+i = 1
+while i < 10 then
+	j = 1
+	while j < 10 then
+		if i >= j then
+			print i + j
+		else
+			print 0
+		endif
+		space
+		j = j + 1
+	endwhile
+	newline
+	i = i + 1
+endwhile

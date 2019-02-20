@@ -99,7 +99,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 		delete elem;
 }
 
-Executer::~Executer() {
+void Executer::~Executer() {
 	for (auto it = arr_table.cbegin(); it != arr_table.cend(); it++)
 		delete it->second;
 }
