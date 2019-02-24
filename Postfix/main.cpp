@@ -33,7 +33,6 @@ int main() {
 		cout << BLUE << "Infix:\n" << RESET << code << endl;
 		SyntaxAnalyzer sa(la, code);
 		cout << BLUE << "Postfix:\n" << RESET << code << endl;
-		return 0;
 		cout << YELLOW << "-----------EXECUTION-----------" << RESET << endl;
 		Executer ex(sa, code);
 		cout << YELLOW << endl << "-------------------------------" << RESET << endl;

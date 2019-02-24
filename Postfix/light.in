@@ -1,0 +1,7 @@
+function printnum(val)
+	print val
+	return
+
+global
+	a = 5
+	printnum(a)

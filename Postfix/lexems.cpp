@@ -3,7 +3,6 @@
 Function::Function(string name, set<string> args, int line) {
 	Function::name = name;
 	Function::args = args;
-	Function::type = !args.empty() ? INT : VOID;
 	Function::line = line;
 }
 
@@ -14,10 +13,6 @@ void Function::print() const {
 	else
 		stype = "void";
 	cout << "[" << stype << " " << name << "(" << args.size() << ")" << "] ";
-}
-
-void Call::print() const {
-	cout << "[ call " << name << "(" << args.size() << ")" << "] ";
 }
 
 Number::Number(int val = 0) {
@@ -47,9 +42,10 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right,
                    map<string, Variable *> & var_table) const {
 	int result = 0;
 	int left = l_left->getValue(), right = l_right->getValue();
-	
 	switch (opertype) {
 		case ASSIGN:
+			//l_left->print();
+			//l_right->print();
 			if (l_left->getLexemType() == VAR) {
 				const Variable *v_left = static_cast<const Variable *>(l_left);
 				var_table[v_left->getName()]->setValue(right);

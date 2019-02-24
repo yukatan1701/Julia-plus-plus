@@ -1,0 +1,11 @@
+function mult(x, y)
+	ans = x * y
+	return ans
+
+function add(x, y)
+	ans = x + mult(y, 2)
+	return ans
+
+global
+	b = add(1, 2)
+	print b

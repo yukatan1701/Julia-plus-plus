@@ -19,7 +19,7 @@ using std::endl;
 using std::string;
 using std::set;
 
-enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC, CALL };
+enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC };
 
 enum ERROR_CODES { WRONG_VAR, WRONG_LABEL, GOTO_DEF_ERROR, 
                    NEGATIVE_INDEX, NEGATIVE_SIZE, ARRAY_NOT_FOUND,
@@ -36,6 +36,7 @@ const vector<string> OPERTEXT { "function", "return",
 								"+", "-", "*", "/", "%",
 								"[", "]",
 								"(", ")", ":", "goto",
+								"global"
 								};
 
 enum OPERATOR {
@@ -50,6 +51,7 @@ enum OPERATOR {
 	PLUS, MINUS, MULT, DIV, MOD,
 	LSQUARE, RSQUARE,
 	LBRACKET, RBRACKET, LABEL, GOTO,
+	GLOBAL
 };
 
 const int PRIORITY[] = {
@@ -63,7 +65,8 @@ const int PRIORITY[] = {
 	8, 8, 8, 9, 9,
 	10, 10, 11, 11, 11,
 	13, 13,
-	13, 13, 14, 14
+	13, 13, 14, 14,
+	15
 };
 
 enum FUNCTYPE { VOID, INT };
@@ -91,20 +94,12 @@ public:
 	FUNCTYPE getType() const { return type; }
 	string getName() const { return name; }
 	int getArgc() const { return args.size(); }
+	set<string> getArgs() const { return args; }
 	int getValue() const { return 0; }
 	int getLine() const { return line; }
+	void setType(FUNCTYPE ftype) { type = ftype; }
 	void print() const;
 	LEXEMTYPE getLexemType() const { return FUNC; }
-};
-
-class Call: public Lexem {
-	string name;
-	set<Lexem *> args;
-public:
-	Call(string name, set<Lexem *> args) : name(name), args(args) {}
-	LEXEMTYPE getLexemType() const { return CALL; }
-	void print() const;
-	string getName() const { return name; }
 };
 
 class Number: public Lexem {
@@ -172,7 +167,7 @@ public:
 	If() : Operator(IF) { else_addr = -1; }
 	int getElse() const { return else_addr; }
 	void setElse(int addr) { else_addr = addr; }
-	void print() const { cout << "if[$] "; }
+	void print() const { cout << "if[" << else_addr << "] "; }
 };
 
 #endif

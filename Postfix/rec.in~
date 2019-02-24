@@ -1,0 +1,11 @@
+function sum(n)
+	print n
+	if n == 0 then
+		return 0
+	endif
+	x = 1 + sum(n - 1)
+	return x
+
+global
+	z = sum(5)
+	print z

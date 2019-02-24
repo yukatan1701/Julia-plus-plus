@@ -118,8 +118,9 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 		} else {
 			cur_lex = wordToLexem(input, i);
 			// add label
-			if (ch == '#')
+			if (ch == '#') {
 				break;
+			}
 			if (ch == ':') {
 				Lexem *last_lex = line[line.size() - 1];
 				if (last_lex->getLexemType() != VAR) {

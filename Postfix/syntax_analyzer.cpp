@@ -7,9 +7,20 @@ SyntaxAnalyzer::SyntaxAnalyzer(const LexicalAnalyzer & la, LexemVector & lv) {
 }
 
 void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
+	stack<Function *> fstack;
 	for (int i = 0; i < lv.lines.size(); i++) {
-		for(int j = 1; j < lv.lines[i].size(); j++) {
+		for(int j = 0; j < lv.lines[i].size(); j++) {
 			Lexem *cur = lv.lines[i][j];
+			if (j == 0 && cur->getLexemType() == OPER) {	
+				Operator *op = static_cast<Operator *>(cur);
+				if (op->getType() == RETURN) {
+					if (j == lv.lines[i].size() - 1)
+						fstack.top()->setType(VOID);
+					else
+						fstack.top()->setType(INT);
+				}
+			}
+			if (j == 0) continue;
 			Lexem *prev = lv.lines[i][j - 1];
 			//function definition
 			if (cur->getLexemType() == VAR && prev->getLexemType() == OPER) {
@@ -25,22 +36,16 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 						}
 						delete lex;
 					}
-					lv.lines[i].resize(2);
+					lv.lines[i].resize(1);
 					Function *func = new Function(var->getName(), args, i);
+					if (!fstack.empty())
+						fstack.pop();
+					fstack.push(func);
 					func_table.insert(pair<string, Function *>(var->getName(), func));
 					delete cur;
-					lv.lines[i][j] = (Lexem *) func;
+					lv.lines[i][j - 1] = (Lexem *) func;
 					break;
-				}
-			}
-			//function call
-			if (cur->getLexemType() == OPER && prev->getLexemType() == VAR) {
-
-				Operator *op = static_cast<Operator *>(cur);
-				Variable *var = static_cast<Variable *>(prev);
-				if (op->getType() == LBRACKET) {
-					//set<Lexem *> 
-				}
+				} 
 			}
 		}
 	}
@@ -66,16 +71,20 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 		Lexem *prev = nullptr;
 		for (Lexem *cur : lv.lines[i]) {
 			LEXEMTYPE lextype = cur->getLexemType();
-			if (lextype == FUNC)
+			if (lextype == FUNC) {
+				postfix.push_back(cur);
 				break;
+			}
 			if (lextype == NUM || lextype == VAR) {
 				postfix.push_back(cur);
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
 				OPERATOR optype = op->getType();
 				if (optype == LBRACKET) {
-					if (prev != nullptr && prev->getLexemType() == VAR)
+					if (prev != nullptr && prev->getLexemType() == VAR) {
 						br_stack.push('*'); // special bracket for function call
+						postfix.push_back(op);
+					}
 					else
 						br_stack.push('(');
 				}

@@ -197,6 +197,8 @@ void LexicalAnalyzer::checkIf(LexemVector & lv) {
 					if (top->getElse() > -1) {
 						Goto *else_goto = new Goto(j);
 						lv.lines[top->getElse() - 1].push_back(else_goto);
+					} else {
+						top->setElse(j);
 					}
 					ifstack.pop();
 				}
