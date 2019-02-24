@@ -13,7 +13,6 @@ using std::stack;
 using std::map;
 using std::string;
 using std::set;
-using std::pair;
 
 enum ACCOCIATE { LEFT, RIGHT };
 

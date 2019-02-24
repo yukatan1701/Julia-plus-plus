@@ -1,0 +1,11 @@
+#function plus(a, b)
+#	c = a + b
+#	return c
+
+#function main()
+	x = 5
+	y = 7
+#c = add(x, y)
+	print c
+	newline
+#	return

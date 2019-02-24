@@ -1,0 +1,7 @@
+array[10]
+i = 0
+while i < 10 then
+	array[10 - i - 1] = i
+	i = i + 1
+endwhile
+print array[5]

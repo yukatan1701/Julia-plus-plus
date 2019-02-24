@@ -4,24 +4,47 @@ Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv) {
 	//findArrays(lv);
 	evaluatePostfix(lv);
 }
-/*
-void Executer::findArrays(LexemVector & lv) {
-	for (auto line : lv) {
-		for (int i = 0; i < line.size(); i++) {
-			if (line[i]->getLexemType() == OPER) {
-				Operator *op = static_cast<Operator *>(line[i]);
-				if (op->getType() == LSQUARE) {
-					if (i > 0 && line[i - 1]->getLexemType() == VAR) {
-						Variable *var = static_cast<Variable *>(line[i - 1]);	
-					} else {
-						// TODO: syntax error
-					}
-				}
-			}
-		}
+
+bool Executer::isFastOperator(Operator *op) {
+	if (op->getType() == ENDIF)
+		return true;
+	if (op->getType() == NEWLINE) {
+		cout << endl;
+		return true;	
+	}
+	if (op->getType() == SPACE) {
+		cout << " ";
+		return true;	
+	}
+	return false;
+}
+
+void Executer::processArray(Lexem *val1, Lexem *val2,
+							int j, int cur_line_size,
+                            vector<Lexem *> & temporary, 
+							stack<Lexem *> & values) {
+	Variable *var = static_cast<Variable *>(val1);
+	Number *num = static_cast<Number *>(val2);
+	int pos = num->getValue();
+	if (j == cur_line_size - 1) {
+		if (pos < 0)
+			throw NEGATIVE_SIZE;
+		if (arr_table.find(var->getName()) != arr_table.end())
+			throw ARRAY_REDEFINITION;
+		arr_table[var->getName()] = new vector<int>(pos);
+	} else {
+		if (arr_table.find(var->getName()) == arr_table.end())
+			throw ARRAY_NOT_FOUND;
+		vector<int> *array = arr_table[var->getName()];
+		if (pos < 0)
+			throw NEGATIVE_INDEX;
+		int & cell = array->at(pos);
+		Lexem *ref = new Reference(var->getName(), cell);
+		values.push(ref);
+		temporary.push_back(ref);
 	}
 }
-*/
+
 void Executer::evaluatePostfix(LexemVector & lv) {
 	vector<Lexem *> temporary;
 	for (int i = 0; i < lv.lines.size(); ) {
@@ -47,16 +70,8 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					i = gt->getAddress();
 					break;
 				}
-				if (op->getType() == ENDIF)
+				if (isFastOperator(op))
 					continue;
-				if (op->getType() == NEWLINE) {
-					cout << endl;
-					continue;		
-				}
-				if (op->getType() == SPACE) {
-					cout << " ";
-					continue;		
-				}
 				Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
@@ -74,18 +89,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				Lexem *val1 = values.top();
 				values.pop();
 				if (op->getType() == LSQUARE) {
-					// definition
-					Variable *var = static_cast<Variable *>(val1);
-					Number *num = static_cast<Number *>(val2);
-					if (j == cur_line.size() - 1) {
-						arr_table[var->getName()] = new vector<int>(num->getValue());
-					} else {
-						vector<int> *array = arr_table[var->getName()];
-						int & cell = array->at(num->getValue());
-						Lexem *ref = new Reference(var->getName(), cell);
-						values.push(ref);
-						temporary.push_back(ref);
-					}
+					processArray(val1, val2, j, cur_line.size(), temporary, values);
 					continue;
 				}
 				result = op->getValue(val1, val2, var_table);
@@ -99,7 +103,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 		delete elem;
 }
 
-void Executer::~Executer() {
+Executer::~Executer() {
 	for (auto it = arr_table.cbegin(); it != arr_table.cend(); it++)
 		delete it->second;
 }

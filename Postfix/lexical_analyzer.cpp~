@@ -38,6 +38,8 @@ Lexem * LexicalAnalyzer::readNumber(const string & input, int & i) const {
 }
 
 bool LexicalAnalyzer::isOperator(const string & word) const {
+	if (word.empty())
+		return false;
 	for (auto elem : OPERTEXT) {
 		if (elem == word)
 			return true;
@@ -46,6 +48,8 @@ bool LexicalAnalyzer::isOperator(const string & word) const {
 }
 
 bool LexicalAnalyzer::isVariable(const string & word) const {
+	if (word.empty())
+		return false;
 	for (int i = 0; i < word.size(); i++) {
 		if (!isVariableChar(word[i]))
 			return false;
@@ -60,16 +64,14 @@ OPERSTYLE LexicalAnalyzer::style(const string & word) const {
 }
 
 Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i) const {
-	string word;	
+	string word;
 	if (isOperatorChar(input[i])) {
 		bool is_word = isalpha(input[i]);
 		bool is_prev_op = false;
 		OPERSTYLE last_style = is_word ? WORD : CHARS;
 		while (isOperatorChar(input[i])) {
 			word.push_back(input[i++]);
-			//cout << "[" << input[i] << "]" << word << style(word) << endl;
 			if (last_style != style(word)) {
-				//cout << "OK" << endl;
 				word.pop_back();
 				i--;
 				break;
@@ -91,14 +93,14 @@ Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i) const {
 			return new Operator(getOperatorByName(word));
 		if (isVariable(word))
 			return new Variable(word, 0);
-		cout << word << "$";
+		cout << word << endl;
 		throw WRONG_VAR;
 	}
 	while (isVariableChar(input[i]))
 		word.push_back(input[i++]);
 	if (isVariable(word))
 		return new Variable(word, 0);
-	cout << word;
+	cout << word << endl;
 	throw WRONG_VAR;
 }
 
@@ -116,6 +118,8 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 		} else {
 			cur_lex = wordToLexem(input, i);
 			// add label
+			if (ch == '#')
+				break;
 			if (ch == ':') {
 				Lexem *last_lex = line[line.size() - 1];
 				if (last_lex->getLexemType() != VAR) {

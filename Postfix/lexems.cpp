@@ -1,15 +1,27 @@
 #include "lexems.h"
 
+Function::Function(string name, set<string> args, int line) {
+	Function::name = name;
+	Function::args = args;
+	Function::type = !args.empty() ? INT : VOID;
+	Function::line = line;
+}
+
+void Function::print() const {
+	string stype;
+	if (type == INT)
+		stype = "int";
+	else
+		stype = "void";
+	cout << "[" << stype << " " << name << "(" << args.size() << ")" << "] ";
+}
+
+void Call::print() const {
+	cout << "[ call " << name << "(" << args.size() << ")" << "] ";
+}
+
 Number::Number(int val = 0) {
 	value = val;
-}
-
-Lexem * Number::copy() const {
-	return new Number(value);
-}
-
-Lexem * Operator::copy() const {
-	return new Operator(opertype);
 }
 
 Operator::Operator(OPERATOR type) {
@@ -18,7 +30,7 @@ Operator::Operator(OPERATOR type) {
 
 bool Operator::isBinary() const {
 	const string &name = OPERTEXT[opertype];
-	if (name == "print")
+	if (name == "print" || name == ",")
 		return false;
 	return true;
 }

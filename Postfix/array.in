@@ -4,4 +4,5 @@ while i < 10 then
 	a[i] = i
 	i = i + 1
 endwhile
-a[0] = a[1] = a[2] - 10
+#a[0] = a[1] = a[2] - 10
+a[9] = a[0]
