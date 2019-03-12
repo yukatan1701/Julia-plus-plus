@@ -16,6 +16,7 @@ Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv) {
 }
 
 void Executer::findEntryPoint(const LexemVector & lv) {
+	entry_point = 0;
 	for (int i = 0; i < lv.lines.size(); i++) {
 		if (!lv.lines[i].empty() && lv.lines[i][0]->getLexemType() == OPER) {
 			Operator *op = static_cast<Operator *>(lv.lines[i][0]);
@@ -105,14 +106,26 @@ void Executer::loadVariables(map<string, Variable *> & var_table, Function *func
 void Executer::deleteTables() {	
 	map<string, Variable *> *var_table = var_tables.top();
 	for (auto it = var_table->cbegin(); it != var_table->cend(); it++)
-		delete it->second;
+		//delete it->second;
+		;
 	delete var_table;
 	var_tables.pop();
 	map<string, vector<int> *> *arr_table = arr_tables.top();
 	for (auto it = arr_table->cbegin(); it != arr_table->cend(); it++)
-		delete it->second;
+		//delete it->second;
+		;
 	delete arr_table;
 	arr_tables.pop();
+}
+
+void print_stack(const stack<Lexem *> & old_st) {
+	stack<Lexem *> st = old_st;
+	cout << "Stack: ";
+	while (!st.empty()) {
+		st.top()->print();
+		st.pop();
+	}
+	cout << endl;
 }
 
 void Executer::evaluatePostfix(LexemVector & lv) {
@@ -136,7 +149,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 			map<string, Variable *> & var_table = *(var_tables.top());
 			map<string, vector<int> *> & arr_table = *(arr_tables.top());
 			Lexem *cur = cur_line[j];
+			//cout << "HERE ";
 			//cur->print();
+			//cout << endl;
+			//print_stack(values);
 			//if (!values.empty())
 			//	cout << "% " << values.top()->getValue() << endl;
 			LEXEMTYPE lextype = cur->getLexemType();
@@ -167,8 +183,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					if (cur_func->getType() == INT) {
 						Lexem *ans = values.top();
 						values.pop();
-						while (values.size() != stack_sizes.top())
+						while (values.size() != stack_sizes.top()) {
+							delete values.top();
 							values.pop();
+						}
 						stack_sizes.pop();
 						Number *eax = new Number(ans->getValue());
 						//cout << ans->getValue() << endl;
@@ -178,16 +196,22 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					//cout << "Here" << endl;
 					functions.pop();
 					pair<int, int> addr = returnAddresses.top();
-					cout << cur_func->getName() << endl;
-					cout << "Level: " << stack_sizes.size() + 1 << endl;
-					printInnerVars(var_table);
+					//cout << cur_func->getName() << endl;
+					//cout << "Level: " << stack_sizes.size() + 1 << endl;
+					//printInnerVars(var_table);
+					//cout << "Ready to return..." << endl;
+					//print_stack(values);
+					//cout << "RETURN" << endl;
 					deleteTables();
 					i = addr.first;
 					new_j = addr.second + 1;
 					returnAddresses.pop();
-					values.top()->print();
+					//cout << "Stack top: ";
+					//values.top()->print();
+					//cout << endl;
 					//cout << i << "/" << new_j << endl;
-					//lv.lines[i][j]->print();
+					//lv.lines[i][new_j]->print();
+					//cout << "Stack size: " << values.size() << endl;
 					is_return = true;
 					break;
 				}
@@ -216,6 +240,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					returnAddresses.push(make_pair(old_i, j));
 					//cout << old_i << "*" << j;
 					i = func->getLine();
+					//cout << "Stack size: " << values.size() << endl;
 					break;
 				}
 				Lexem *val2 = values.top();
@@ -246,9 +271,14 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					processArray(arr_table, val1, val2, j, cur_line.size(), temporary, values);
 					continue;
 				}
+				//cout << "HOPA" << endl;
 				result = op->getValue(val1, val2, var_table);
+				//cout << "HMM..." << endl;
 				Lexem *res = new Number(result);
 				values.push(res);
+				//cout << "RES: ";
+				//res->print();
+				//cout << endl;
 				temporary.push_back(res);
 			}
 		}

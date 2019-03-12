@@ -8,4 +8,5 @@ function sum(n)
 
 global
 	z = sum(3)
+	newline
 	print z

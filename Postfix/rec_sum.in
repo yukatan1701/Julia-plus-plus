@@ -1,0 +1,11 @@
+function sumdigit(n)
+	if n == 0 then
+		return 0
+	endif
+	return n % 10 + sumdigit(n / 10)
+
+global
+	x = 45127
+	sum = sumdigit(x)
+	print sum
+	

@@ -1,0 +1,12 @@
+function mult(x, y)
+	return x * y
+
+function sum(a, b)
+	c = a + mult(2, b)
+	return c
+
+global
+	z = sum(1, 3)
+	print z
+
+
