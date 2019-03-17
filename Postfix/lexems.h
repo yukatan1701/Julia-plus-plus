@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include "errors.h"
 
 #define YELLOW  "\033[1;33m"
 #define BLUE    "\033[1;36m"
@@ -20,10 +21,6 @@ using std::string;
 using std::set;
 
 enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC };
-
-enum ERROR_CODES { WRONG_VAR, WRONG_LABEL, GOTO_DEF_ERROR, 
-                   NEGATIVE_INDEX, NEGATIVE_SIZE, ARRAY_NOT_FOUND,
-				   ARRAY_REDEFINITION };
 
 const vector<string> OPERTEXT { "function", "return",
 								"print", "newline", "space",
@@ -82,6 +79,7 @@ public:
 	virtual void print() const = 0;
 	int getRow() { return row; }
 	int getCol() { return col; }
+	~Lexem() {}
 };
 
 class Function: public Lexem {

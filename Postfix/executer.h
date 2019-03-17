@@ -6,6 +6,7 @@
 #include <utility>
 #include "syntax_analyzer.h"
 #include "lexems.h"
+#include "errors.h"
 
 using std::set;
 using std::pair;

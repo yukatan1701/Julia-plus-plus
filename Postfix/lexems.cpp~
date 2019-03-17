@@ -42,7 +42,6 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
 	int result = 0;
 	int left = l_left->getValue(), right = l_right->getValue();
 	switch (opertype) {
-		case ASSIGN:
 		case PLUS:
 			return left + right;
 		case MINUS:

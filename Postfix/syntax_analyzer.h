@@ -4,6 +4,7 @@
 #include "lexem_vector.h"
 #include "lexical_analyzer.h"
 #include "lexems.h"
+#include "errors.h"
 #include <stack>
 #include <map>
 #include <set>

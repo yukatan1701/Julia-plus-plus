@@ -91,17 +91,19 @@ Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i) const {
 		}
 		if (isOperator(word)) 
 			return new Operator(getOperatorByName(word));
-		if (isVariable(word))
-			return new Variable(word, 0);
-		cout << word << endl;
-		throw WRONG_VAR;
+		//if (isVariable(word))
+		//	break;
+			//return new Variable(word, 0);
+		//cout << word << endl;
+		//throw WRONG_VAR;
 	}
-	while (isVariableChar(input[i]))
+	while (isVariableChar(input[i])) {
 		word.push_back(input[i++]);
+	}
 	if (isVariable(word))
 		return new Variable(word, 0);
 	cout << word << endl;
-	throw WRONG_VAR;
+	throw Error(WRONG_VAR);
 }
 
 void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
@@ -116,11 +118,10 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 		if (isdigit(ch)) {
 			cur_lex = readNumber(input, i);
 		} else {
+			if (ch == '#')
+				break;
 			cur_lex = wordToLexem(input, i);
 			// add label
-			if (ch == '#') {
-				break;
-			}
 			if (ch == ':') {
 				Lexem *last_lex = line[line.size() - 1];
 				if (last_lex->getLexemType() != VAR) {
@@ -154,7 +155,7 @@ void LexicalAnalyzer::checkGoto(LexemVector & lv) {
 					if (i < n - 1 && line[i + 1]->getLexemType() == VAR) {
 						Variable *addr = static_cast<Variable *>(line[i + 1]);
 						if (label_table.find(addr->getName()) == label_table.end())
-							throw GOTO_DEF_ERROR;
+							throw Error(GOTO_NOT_FOUND);
 						Goto *gt = new Goto(label_table[addr->getName()]);
 						delete op;
 						delete addr;
@@ -162,7 +163,7 @@ void LexicalAnalyzer::checkGoto(LexemVector & lv) {
 						line.push_back(gt);
 						break;
 					} else
-						throw GOTO_DEF_ERROR;
+						throw Error(GOTO_DEF_ERROR);
 				}
 			}
 		}
@@ -197,6 +198,8 @@ void LexicalAnalyzer::checkIf(LexemVector & lv) {
 					if (top->getElse() > -1) {
 						Goto *else_goto = new Goto(j);
 						lv.lines[top->getElse() - 1].push_back(else_goto);
+					} else {
+						top->setElse(j);
 					}
 					ifstack.pop();
 				}

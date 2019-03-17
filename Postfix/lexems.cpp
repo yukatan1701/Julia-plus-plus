@@ -84,6 +84,8 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
 		case NEWLINE:
 			cout << endl;
 			return 0;
+		default:
+			return 0;
 	}
 	return result;
 }

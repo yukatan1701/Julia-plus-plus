@@ -3,7 +3,6 @@
 
 #include "lexem_vector.h"
 #include "lexems.h"
-#include "errors.h"
 #include <string>
 #include <stack>
 #include <cctype>

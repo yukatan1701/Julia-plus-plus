@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-c -std=c++11 -fmax-errors=5
 LDFLAGS=
-SOURCES=main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp 
+SOURCES=main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp errors.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=postfix
 

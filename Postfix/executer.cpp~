@@ -50,21 +50,23 @@ void Executer::processArray(Lexem *val1, Lexem *val2,
 	int pos = num->getValue();
 	if (j == cur_line_size - 1) {
 		if (pos < 0)
-			throw NEGATIVE_SIZE;
+			throw Error(NEGATIVE_SIZE);
 		if (arr_table.find(var->getName()) != arr_table.end())
-			throw ARRAY_REDEFINITION;
+			throw Error(ARRAY_REDEFINITION);
 		arr_table[var->getName()] = new vector<int>(pos);
 	} else {
 		if (arr_table.find(var->getName()) == arr_table.end()
 			&& (*global_arr_table).find(var->getName()) == global_arr_table->end())	
-			throw ARRAY_NOT_FOUND;
+			throw Error(ARRAY_NOT_FOUND);
 		vector<int> *array;
 		if (arr_table.find(var->getName()) != arr_table.end())
 			array = arr_table[var->getName()];
 		else
 			array = (*global_arr_table)[var->getName()];
 		if (pos < 0)
-			throw NEGATIVE_INDEX;
+			throw Error(NEGATIVE_INDEX);
+		if (pos > array.size() - 1)
+			throw Error(INDEX_OUT_OF_RANGE);
 		int & cell = array->at(pos);
 		Lexem *ref = new Reference(var->getName(), cell);
 		values.push(ref);
@@ -246,11 +248,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					i = gt->getAddress();
 					break;
 				}
-				if (isFastOperator(op)) {
+				if (isFastOperator(op))
 					continue;
-				}
 				if (op->getType() == RETURN) {
-					doReturn(functions, i, new_j);
+					is_return = doReturn(functions, i, new_j);
 					break;
 				}
 				if (op->getType() == LBRACKET) {

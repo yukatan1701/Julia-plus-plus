@@ -19,6 +19,7 @@ enum ACCOCIATE { LEFT, RIGHT };
 
 class SyntaxAnalyzer {
 	friend class LexemVector;
+	friend class Executer;
 private:
 	map<string, Function *> func_table;
 	bool checkPriority(const stack<Operator *> &, const Operator *) const;
