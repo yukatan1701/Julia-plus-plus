@@ -167,7 +167,7 @@ public:
 	If() : Operator(IF) { else_addr = -1; }
 	int getElse() const { return else_addr; }
 	void setElse(int addr) { else_addr = addr; }
-	void print() const { cout << "if[$] "; }
+	void print() const { cout << "if[" << else_addr << "] "; }
 };
 
 #endif

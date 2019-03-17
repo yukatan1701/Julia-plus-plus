@@ -1,11 +1,19 @@
-function mult(x, y)
-	ans = x * y
-	return ans
-
-function add(x, y)
-	ans = x + mult(y, 2)
-	return ans
-
+function glob()
+	print x
+	return
+	
+function change()
+	a[5] = 6
+	return	
+	
 global
-	b = add(1, 2)
-	print b
+	x = 12
+	glob()
+	a[6]
+	i = 0
+	while i < 6 then
+		a[i] = 1
+		i = i + 1
+	endwhile
+	change()
+	print a[5]

@@ -33,8 +33,7 @@ private:
 	void loadVariables(map<string, Variable *> & var_table, Function *func);
 	void deleteTables();
 	void evaluatePostfix(LexemVector & lv);
-	void processArray(map<string, vector<int> *> & arr_table,
-	                  Lexem *val1, Lexem *val2, int j,
+	void processArray(Lexem *val1, Lexem *val2, int j,
 	                  int cur_line_size,
                       vector<Lexem *> & temporary, 
 					  stack<Lexem *> & values);

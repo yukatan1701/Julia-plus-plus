@@ -42,11 +42,11 @@ bool Executer::isFastOperator(Operator *op) {
 	return false;
 }
 
-void Executer::processArray(map<string, vector<int> *> & arr_table,
-                            Lexem *val1, Lexem *val2,
+void Executer::processArray(Lexem *val1, Lexem *val2,
 							int j, int cur_line_size,
                             vector<Lexem *> & temporary, 
 							stack<Lexem *> & values) {
+	map<string, vector<int> *> & arr_table = *(arr_tables.top());
 	Variable *var = static_cast<Variable *>(val1);
 	Number *num = static_cast<Number *>(val2);
 	int pos = num->getValue();
@@ -57,9 +57,14 @@ void Executer::processArray(map<string, vector<int> *> & arr_table,
 			throw ARRAY_REDEFINITION;
 		arr_table[var->getName()] = new vector<int>(pos);
 	} else {
-		if (arr_table.find(var->getName()) == arr_table.end())
+		if (arr_table.find(var->getName()) == arr_table.end()
+			|| (*global_arr_table).find(var->getName()) == global_arr_table->end())	
 			throw ARRAY_NOT_FOUND;
-		vector<int> *array = arr_table[var->getName()];
+		vector<int> *array;
+		if (arr_table.find(var->getName()) != arr_table.end())
+			array = arr_table[var->getName()];
+		else
+			array = (*global_arr_table)[var->getName()];
 		if (pos < 0)
 			throw NEGATIVE_INDEX;
 		int & cell = array->at(pos);
@@ -103,8 +108,6 @@ void Executer::loadVariables(map<string, Variable *> & var_table, Function *func
 
 void Executer::deleteTables() {	
 	map<string, Variable *> *var_table = var_tables.top();
-	printInnerVars(*var_table);
-	
 	for (auto it = var_table->cbegin(); it != var_table->cend(); it++)
 		delete it->second;
 	delete var_table;
@@ -112,7 +115,6 @@ void Executer::deleteTables() {
 	map<string, vector<int> *> *arr_table = arr_tables.top();
 	for (auto it = arr_table->cbegin(); it != arr_table->cend(); it++)
 		delete it->second;
-		;
 	delete arr_table;
 	arr_tables.pop();
 }
@@ -148,12 +150,8 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 			map<string, Variable *> & var_table = *(var_tables.top());
 			map<string, vector<int> *> & arr_table = *(arr_tables.top());
 			Lexem *cur = cur_line[j];
-			//cout << "HERE ";
 			//cur->print();
 			//cout << endl;
-			//print_stack(values);
-			//if (!values.empty())
-			//	cout << "% " << values.top()->getValue() << endl;
 			LEXEMTYPE lextype = cur->getLexemType();
 			if (lextype == FUNC) {
 				Function *cur_func = static_cast<Function *>(cur);
@@ -166,10 +164,16 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 			} else if (lextype == VAR) {
 				Variable *var = static_cast<Variable *>(cur);
 				if (var_table.find(var->getName()) == var_table.end()) {
-					var = new Variable(var->getName(), var->getValue());
+					if (global_var_table->find(var->getName()) == global_var_table->end()) {
+						var = new Variable(var->getName(), var->getValue());
+						var_table.insert(pair<string, Variable *>(var->getName(), var));
+						values.push(var_table[var->getName()]);
+					} else {
+						values.push((*global_var_table)[var->getName()]);
+					}
+				} else {
+					values.push(var_table[var->getName()]);
 				}
-				var_table.insert(pair<string, Variable *>(var->getName(), var));
-				values.push(var_table[var->getName()]);
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
 				if (op->getType() == GOTO) {
@@ -189,29 +193,17 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 							values.pop();
 						stack_sizes.pop();
 						Number *eax = new Number(ans->getValue());
-						//cout << ans->getValue() << endl;
 						temporary.push_back(eax);
 						values.push(eax);
 					}
-					//cout << "Here" << endl;
 					functions.pop();
 					pair<int, int> addr = returnAddresses.top();
-					//cout << cur_func->getName() << endl;
-					//cout << "Level: " << stack_sizes.size() + 1 << endl;
 					//printInnerVars(var_table);
-					//cout << "Ready to return..." << endl;
-					//print_stack(values);
-					//cout << "RETURN" << endl;
+					//printInnerArrs(arr_table);
 					deleteTables();
 					i = addr.first;
 					new_j = addr.second + 1;
 					returnAddresses.pop();
-					//cout << "Stack top: ";
-					//values.top()->print();
-					//cout << endl;
-					//cout << i << "/" << new_j << endl;
-					//lv.lines[i][new_j]->print();
-					//cout << "Stack size: " << values.size() << endl;
 					is_return = true;
 					break;
 				}
@@ -221,7 +213,6 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				}
 				if (op->getType() == RBRACKET) {
 					Lexem *last = values.top();
-					//values.pop();
 					if (last->getLexemType() == OPER) {
 						Operator *oper = static_cast<Operator *>(last);
 						if (oper->getType() != LBRACKET) {
@@ -235,15 +226,12 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					// TODO: check
 					values.pop();
 					Variable *func_name = static_cast<Variable *>(values.top());
-					//cout << "HERE" << endl;
 					Function *func = func_table[func_name->getName()];
 					values.pop();
 					stack_sizes.push(values.size());
 					addToStack(args, func->getArgc());
 					returnAddresses.push(make_pair(old_i, j));
-					//cout << old_i << "*" << j;
 					i = func->getLine();
-					//cout << "Stack size: " << values.size() << endl;
 					break;
 				}
 				Lexem *val2 = values.top();
@@ -265,23 +253,34 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					break;
 				}
 				if (!op->isBinary()) {
-					result = op->getValue(val2, val2, var_table);
+					result = op->getValue(val2, val2);
 					continue;
 				}
 				Lexem *val1 = values.top();
 				values.pop();
 				if (op->getType() == LSQUARE) {
-					processArray(arr_table, val1, val2, j, cur_line.size(), temporary, values);
+					processArray(val1, val2, j, cur_line.size(), temporary, values);
 					continue;
 				}
-				//cout << "HOPA" << endl;
-				result = op->getValue(val1, val2, var_table);
-				//cout << "HMM..." << endl;
+				if (op->getType() == ASSIGN) {
+					int left = val1->getValue(), right = val2->getValue();
+					if (val1->getLexemType() == VAR) {
+						const Variable *v_left = static_cast<const Variable *>(val1);
+						if (var_table.find(v_left->getName()) != var_table.end())
+							var_table[v_left->getName()]->setValue(right);
+						else
+							(*global_var_table)[v_left->getName()]->setValue(right);
+					} else if (val1->getLexemType() == REF) {
+						const Reference *r_left = static_cast<const Reference *>(val1);
+						int & dest = r_left->getReference();
+						dest = right;
+					}
+					result = right;
+				} else {
+					result = op->getValue(val1, val2);
+				}
 				Lexem *res = new Number(result);
 				values.push(res);
-				//cout << "RES: ";
-				//res->print();
-				//cout << endl;
 				temporary.push_back(res);
 			}
 		}

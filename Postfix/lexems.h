@@ -144,8 +144,7 @@ public:
 	Operator(OPERATOR type);
 	OPERATOR getType() const { return opertype; }
 	int getValue() const { return 0; }
-	int getValue(const Lexem * l_left, const Lexem * l_right, 
-	             map<string, Variable *> & var_table) const;
+	int getValue(const Lexem * l_left, const Lexem * l_right) const;
 	LEXEMTYPE getLexemType() const { return OPER; }
 	int priority() const;
 	virtual bool isBinary() const;

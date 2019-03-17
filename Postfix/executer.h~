@@ -18,7 +18,7 @@ private:
 	map<string, Function *> func_table;
 	stack<Lexem *> values;
 	vector<Lexem *> temporary;
-	stack<int> stack_sizes();
+	stack<int> stack_sizes;
 	int entry_point;
 
 	map<string, Variable *> * global_var_table;
