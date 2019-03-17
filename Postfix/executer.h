@@ -33,10 +33,11 @@ private:
 	void loadVariables(map<string, Variable *> & var_table, Function *func);
 	void deleteTables();
 	void evaluatePostfix(LexemVector & lv);
-	void processArray(Lexem *val1, Lexem *val2, int j,
-	                  int cur_line_size,
-                      vector<Lexem *> & temporary, 
-					  stack<Lexem *> & values);
+	void processArray(Lexem *val1, Lexem *val2, int j, int cur_line_size);
+	void processVariable(Variable *var);
+	int doAssign(Lexem *val1, Lexem *val2);
+	bool doReturn(stack<Function *> & functions, int & i, int & new_j);
+	int callFunction(stack<int> & args, int old_i, int j);
 	bool isFastOperator(Operator *op);
 	void printInnerVars(const map<string, Variable *> & table) const;
 	void printInnerArrs(const map<string, vector<int> *> & table) const;
