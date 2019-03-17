@@ -1,14 +1,20 @@
 CC=g++
+CFLAGS=-c -std=c++11 -fmax-errors=5
+LDFLAGS=
+SOURCES=main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp 
+OBJECTS=$(SOURCES:.cpp=.o)
+EXECUTABLE=postfix
 
-CFLAGS=-std=c++11 -fmax-errors=5
+all: $(SOURCES) $(EXECUTABLE)
 
-all: hello
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
-hello:
-	$(CC) main.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp -o postfix $(CFLAGS)
+.cpp.o:
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf *.o postfix
+	rm -rf *.o $(EXECUTABLE)
 
 	
 
