@@ -1,0 +1,8 @@
+function printf()
+	print 9
+	return
+	
+global
+	printf()
+	newline
+	print 1

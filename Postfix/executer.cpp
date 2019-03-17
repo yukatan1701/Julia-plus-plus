@@ -95,24 +95,21 @@ void Executer::loadVariables(map<string, Variable *> & var_table, Function *func
 		return;
 	for (auto it = args.cbegin(); it != args.cend(); it++) {
 		Number *num = static_cast<Number *>(values.top());
-		//cout << num->getValue() << " ";
 		Variable *var = new Variable(*it, num->getValue());
 		values.pop();
 		var_table[*it] = var;
 	}
-	//cout << endl;
 }
 
 void Executer::deleteTables() {	
 	map<string, Variable *> *var_table = var_tables.top();
 	for (auto it = var_table->cbegin(); it != var_table->cend(); it++)
-		//delete it->second;
-		;
+		delete it->second;
 	delete var_table;
 	var_tables.pop();
 	map<string, vector<int> *> *arr_table = arr_tables.top();
 	for (auto it = arr_table->cbegin(); it != arr_table->cend(); it++)
-		//delete it->second;
+		delete it->second;
 		;
 	delete arr_table;
 	arr_tables.pop();
@@ -166,8 +163,11 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				values.push(cur);
 			} else if (lextype == VAR) {
 				Variable *var = static_cast<Variable *>(cur);
+				if (var_table.find(var->getName()) == var_table.end()) {
+					var = new Variable(var->getName(), var->getValue());
+				}
 				var_table.insert(pair<string, Variable *>(var->getName(), var));
-				values.push(var_table.find(var->getName())->second);
+				values.push(var_table[var->getName()]);
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
 				if (op->getType() == GOTO) {
@@ -219,18 +219,21 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				}
 				if (op->getType() == RBRACKET) {
 					Lexem *last = values.top();
-					values.pop();
+					//values.pop();
 					if (last->getLexemType() == OPER) {
 						Operator *oper = static_cast<Operator *>(last);
 						if (oper->getType() != LBRACKET) {
 							// TODO: syntax error
 						} else {
 						}
-					} else if (last->getLexemType() == VAR || last->getLexemType() == NUM)
+					} else if (last->getLexemType() == VAR || last->getLexemType() == NUM) {
 						args.push(last->getValue());
+						values.pop();
+					}
 					// TODO: check
 					values.pop();
 					Variable *func_name = static_cast<Variable *>(values.top());
+					//cout << "HERE" << endl;
 					Function *func = func_table[func_name->getName()];
 					values.pop();
 					stack_sizes.push(values.size());
