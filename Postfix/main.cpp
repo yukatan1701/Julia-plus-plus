@@ -1,28 +1,33 @@
+#include "julia.h"
+#include <fstream>
+#include <string>
 #include <iostream>
-#include "lexical_analyzer.h"
-#include "syntax_analyzer.h"
-#include "executer.h"
-#include "errors.h"
 
-using std::cin;
+using std::string;
+using std::ifstream;
 using std::cout;
 using std::endl;
 
-int main() {
-	LexemVector code;
-	try {
-		LexicalAnalyzer la(code);
-		cout << BLUE << "Infix:\n" << RESET << code << endl;
-		SyntaxAnalyzer sa(la, code);
-		cout << BLUE << "Postfix:\n" << RESET << code << endl;
-		cout << YELLOW << "-----------EXECUTION-----------" << RESET << endl;
-		Executer ex(sa, code);
-		cout << YELLOW << endl << "-------------------------------" << RESET << endl;
-		la.printLabels();
-		ex.printVariables();
-		ex.printArrays();
-	} catch (Error err) {
-		err.print();
+string readCode() {
+	string code, line;
+	while (getline(cin, line))
+		code += line + ";";
+	return code;
+}
+
+int main(int argc, char *argv[]) {
+	Julia julia;
+	if (argc > 1) {
+		ifstream code(argv[1]);
+		if (!code.is_open()) {
+			cout << "Failed to open code." << endl;
+			return -1;
+		}
+		julia.run(code);
+		code.close();
+	} else {
+		string code = readCode();
+		julia.run(code);
 	}
 	return 0;
 }

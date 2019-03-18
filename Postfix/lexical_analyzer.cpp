@@ -5,8 +5,8 @@ extern const vector<string> OPERTEXT;
 const char DELIMITER = ' ';
 const char TAB = '\t';
 
-LexicalAnalyzer::LexicalAnalyzer(LexemVector & lv) {
-	runAnalyzer(lv);
+LexicalAnalyzer::LexicalAnalyzer(LexemVector & lv, const string & text) {
+	runAnalyzer(lv, text);
 }
 
 OPERATOR LexicalAnalyzer::getOperatorByName(const string & op) const {
@@ -244,10 +244,16 @@ void LexicalAnalyzer::checkWhile(LexemVector & lv) {
 	}
 }
 
-void LexicalAnalyzer::runAnalyzer(LexemVector & lv) {
+void LexicalAnalyzer::runAnalyzer(LexemVector & lv, const string & text) {
 	string input;
-	while (getline(cin, input))
-		parseLexem(lv, input);
+	for (auto letter: text) {
+		if (letter == ';') {
+			parseLexem(lv, input);
+			input.erase();
+		} else {
+			input += letter;
+		}
+	}
 	checkGoto(lv);
 	checkIf(lv);
 	checkWhile(lv);

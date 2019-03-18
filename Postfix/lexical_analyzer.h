@@ -35,8 +35,8 @@ private:
 	void checkIf(LexemVector & lv);
 	void checkWhile(LexemVector & lv);
 public:
-	LexicalAnalyzer(LexemVector & lv);
-	void runAnalyzer(LexemVector & lv);
+	LexicalAnalyzer(LexemVector & lv, const string & text);
+	void runAnalyzer(LexemVector & lv, const string & text);
 	void printLabels() const;
 };
 
