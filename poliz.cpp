@@ -15,8 +15,6 @@ using std::stack;
 using std::map;
 using std::set;
 using std::pair;
-using std::ostream;
-using std::istream;
 
 enum LEXEMTYPE { NUM, OPER, VAR };
 
@@ -81,51 +79,10 @@ public:
 	void print() const { cout << "{" << name << "}" << " "; }
 };
 
-class LexemVector {
-	vector<Lexem *> line;
-	bool isVariableChar(char) const;
-	bool isOperatorChar(char) const;
-	bool isVariable(const string &) const;
-	bool isOperator(const string &) const;
-	bool skipSpace(const string &, int &, bool &) const;
-	Lexem *readNumber(const string &, int &) const;
-	Lexem *wordToLexem(const string &, int &) const;
-public:
-	LexemVector() {};
-	void parseLexem(const string & input);
-	LexemVector buildPostfix() const;
-	map<string, Variable *> evaluatePostfix() const;
-	void push_back(Lexem *lex);
-	void free();
-	~LexemVector();
-	friend ostream& operator<<(ostream &os, const LexemVector& lv);
-};
-
-ostream& operator<<(ostream &os, const LexemVector& lv) {
-	for (auto elem : lv.line)
-		elem->print();
-	cout << endl;
-}
-
-void LexemVector::push_back(Lexem *lex) {
-	line.push_back(lex);
-}
-
-void LexemVector::free() {
-	for (auto elem : line)
-		delete elem;
-	line.clear();
-}
-
-LexemVector::~LexemVector() {
-	cout << "Destructor." << endl;
-	free();
-}
-
-class Operator: public Lexem {
+class Oper: public Lexem {
 	OPERATOR opertype;
 public:
-	Operator(OPERATOR type);
+	Oper(OPERATOR type);
 	OPERATOR getType() const { return opertype; };
 	int getValue() const { return 0; }
 	int getValue(const Lexem * l_left, const Lexem * l_right, 
@@ -212,7 +169,7 @@ Lexem *popFromTop(stack<Oper> & op_stack) {
 
 enum ACCOCIATE { LEFT, RIGHT };
 
-bool checkPriority(const stack<Oper> & op_stack, const Operator *op) {
+bool checkPriority(const stack<Oper> & op_stack, const Oper *op) {
 	ACCOCIATE pos = LEFT;
 	if (op->getType() == ASSIGN)
 		pos = RIGHT;
@@ -222,40 +179,33 @@ bool checkPriority(const stack<Oper> & op_stack, const Operator *op) {
 }
 
 Lexem *copyLexem(Lexem *old_lexem) {
-	LEXEMTYPE type = old_lexem->getLexemType();
-	if (type == NUM) {
-		Number *num = static_cast<Number *>(old_lexem);
-		return new Number(num->getValue());
-	}
-	else if (type == OPER) {
-		Operator *op = static_cast<Operator *>(old_lexem);
-		return new Oper(op->getType());
-	}
+	if (old_lexem->getLexemType() == NUM)
+		return new Number(old_lexem->getValue());
 	Variable *var = static_cast<Variable *>(old_lexem);
 	return new Variable(var->getName(), var->getValue());
 }
 
-LexemVector LexemVector::buildPostfix() const {
-	LexemVector postfix;
+vector<Lexem *> buildPoliz(vector<Lexem *> infix) {
+	vector<Lexem *> poliz;
 	stack<Oper> op_stack;
-	for (Lexem *cur : line) {
+	for (Lexem *cur : infix) {
 		LEXEMTYPE lextype = cur->getLexemType();
 		if (lextype == NUM || lextype == VAR) {
-			postfix.push_back(copyLexem(cur));
+			poliz.push_back(cur);
 		} else {
-			Operator *op = static_cast<Operator *>(cur);
+			Oper *op = static_cast<Oper *>(cur);
 			OPERATOR optype = op->getType();
 			if (optype == EOL) {
 				while (!op_stack.empty())
-					postfix.push_back(popFromTop(op_stack));
-				postfix.push_back(copyLexem(op));
+					poliz.push_back(popFromTop(op_stack));
+				poliz.push_back(op);
 			} else if (optype == LBRACKET) {
 				op_stack.push(*op);
 			} else if (optype == RBRACKET) {
 				if (!op_stack.empty()) {
 					while (!op_stack.empty() && 
 						   op_stack.top().getType() != LBRACKET) {
-						postfix.push_back(popFromTop(op_stack));
+						poliz.push_back(popFromTop(op_stack));
 					}
 					op_stack.pop();
 				}
@@ -264,16 +214,16 @@ LexemVector LexemVector::buildPostfix() const {
 					while(!op_stack.empty() 
 						  && checkPriority(op_stack, op)
 						  && op_stack.top().getType() != LBRACKET) {
-						postfix.push_back(popFromTop(op_stack));
+						poliz.push_back(popFromTop(op_stack));
 					}
 				}
 				op_stack.push(*op);
 			}
 		}
 		//cout << "Stack size: " << op_stack.size() << endl;
-		//cout << "Postfix size: " << postfix.size() << endl;
+		//cout << "Poliz size: " << poliz.size() << endl;
 	}
-	return postfix;
+	return poliz;
 }
 
 void printTable(const map<string, Variable *> & var_table) {
@@ -284,13 +234,12 @@ void printTable(const map<string, Variable *> & var_table) {
 	}
 }
 
-map<string, Variable *> LexemVector::evaluatePostfix() const {
+map<string, Variable *> evaluatePoliz(vector<Lexem *> poliz) {
 	map<string, Variable *> var_table;
-	if (line.size() == 0)
+	if (poliz.size() == 0)
 		return var_table;
 	stack<Lexem *> values;
-	vector<Lexem *> temporary;
-	for (Lexem *cur : line) {
+	for (Lexem *cur : poliz) {
 		LEXEMTYPE lextype = cur->getLexemType();
 		if (lextype == NUM) {
 			values.push(cur);
@@ -299,7 +248,7 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 			var_table.insert(pair<string, Variable *>(var->getName(), var));
 			values.push(var_table.find(var->getName())->second);
 		} else {
-			Operator *op = static_cast<Operator *>(cur);
+			Oper *op = static_cast<Oper *>(cur);
 			if (op->getType() == EOL) {
 				// TODO: free stack
 				continue;
@@ -309,21 +258,17 @@ map<string, Variable *> LexemVector::evaluatePostfix() const {
 			const Lexem *val1 = values.top();
 			values.pop();
 			int result = op->getValue(val1, val2, var_table);
-			Lexem *res = new Number(result);
-			values.push(res);
-			temporary.push_back(res);
+			values.push(new Number(result));
 		}
 	}
-	for (auto elem : temporary)
-		delete elem;
 	return var_table;
 }
 
-bool LexemVector::isVariableChar(char ch) const {
+bool isVariableChar(char ch) {
 	return ch == '_' || isalnum(ch);
 }
 
-bool LexemVector::isOperatorChar(char ch) const {
+bool isOperatorChar(char ch) {
 	for (auto oper : OPERTEXT) {
 		if (oper.find(ch) != std::string::npos && ch != SEMICOLON)
 			return true;
@@ -331,7 +276,7 @@ bool LexemVector::isOperatorChar(char ch) const {
 	return isalpha(ch);
 }
 
-bool LexemVector::skipSpace(const string & input, int & i, bool & has_eol) const {
+bool skipSpace(const string & input, int & i, bool & has_eol) {
 	if (input[i] == NEWLINE) {
 		if (!has_eol) {
 			throw LOST_SEMICOLON;
@@ -347,14 +292,14 @@ bool LexemVector::skipSpace(const string & input, int & i, bool & has_eol) const
 	return false;
 }
 
-Lexem * LexemVector::readNumber(const string & input, int & i) const {
+Lexem *readNumber(const string & input, int & i) {
 	int value = 0;
 	while (isdigit(input[i]))
 		value = value * 10 + (input[i++] - '0');
 	return new Number(value);
 }
 
-bool LexemVector::isOperator(const string & word) const {
+bool isOperator(string word) {
 	for (auto elem : OPERTEXT) {
 		if (elem == word)
 			return true;
@@ -362,7 +307,7 @@ bool LexemVector::isOperator(const string & word) const {
 	return false;
 }
 
-bool LexemVector::isVariable(const string & word) const {
+bool isVariable(string word) {
 	for (int i = 0; i < word.size(); i++) {
 		if (!isVariableChar(word[i]))
 			return false;
@@ -370,7 +315,7 @@ bool LexemVector::isVariable(const string & word) const {
 	return true;
 }
 
-Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
+Lexem *wordToLexem(const string & input, int & i) {
 	string word;	
 	if (input[i] == SEMICOLON) {
 		i++;
@@ -394,7 +339,8 @@ Lexem * LexemVector::wordToLexem(const string & input, int & i) const {
 	throw WRONG_VAR;
 }
 
-void LexemVector::parseLexem(const string & input) {
+vector<Lexem *> parseLexem(const string & input) {
+	vector<Lexem *> v_lexem;
 	bool has_eol = false;
 	for (int i = 0; i < input.size(); ) {
 		char ch = input[i];
@@ -408,8 +354,9 @@ void LexemVector::parseLexem(const string & input) {
 			if (ch == SEMICOLON)
 				has_eol = true;
 		}
-		line.push_back(cur_lex);
+		v_lexem.push_back(cur_lex);
 	}
+	return v_lexem;
 }
 
 string getCode() {
@@ -434,17 +381,27 @@ void writeMessage(ERROR_CODES er_code) {
 int main() {
 	string input = getCode();
 	//cout << input;
-	LexemVector line;
+	vector<Lexem *> parsed;
 	try {
-		line.parseLexem(input);
-		cout << line;
+		parsed = parseLexem(input);
+		for (auto elem : parsed)
+			elem->print();
+		cout << endl;
 	} catch (ERROR_CODES er_code) {
 		writeMessage(er_code);
 	}
-	LexemVector postfix = line.buildPostfix();
-	line.free();
-	cout << postfix;
-	map<string, Variable *> var_table = postfix.evaluatePostfix();
+	vector<Lexem *> poliz = buildPoliz(parsed);
+	for (auto cur : poliz) {
+		cur->print();
+	}
+	cout << endl;
+	map<string, Variable *> var_table = evaluatePoliz(poliz);
 	printTable(var_table);
+	for (Lexem * elem : parsed) {
+		delete elem;
+	}
+	for (Lexem *elem : poliz) {
+		delete elem;
+	}
 	return 0;
 }
