@@ -63,7 +63,7 @@ OPERSTYLE LexicalAnalyzer::style(const string & word) const {
 	return CHARS;
 }
 
-Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i) const {
+Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i, int line_num, int lex_num) const {
 	string word;
 	if (isOperatorChar(input[i])) {
 		bool is_word = isalpha(input[i]);
@@ -102,8 +102,7 @@ Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i) const {
 	}
 	if (isVariable(word))
 		return new Variable(word, 0);
-	cout << word << endl;
-	throw Error(WRONG_VAR);
+	throw Error(WRONG_VAR, line_num, lex_num);
 }
 
 void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
@@ -117,15 +116,17 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 		Lexem *cur_lex;
 		if (isdigit(ch)) {
 			cur_lex = readNumber(input, i);
+			if (i < input.size() && (isalpha(input[i]) || input[i] == '_'))
+				throw Error(MISSED_SEPARATOR, lv.lines.size() - 1, line.size() - 1);
 		} else {
 			if (ch == '#')
 				break;
-			cur_lex = wordToLexem(input, i);
+			cur_lex = wordToLexem(input, i, lv.lines.size() - 1, line.size());
 			// add label
 			if (ch == ':') {
 				Lexem *last_lex = line[line.size() - 1];
 				if (last_lex->getLexemType() != VAR) {
-					throw Error(WRONG_LABEL);
+					throw Error(WRONG_LABEL, lv.lines.size() - 1, line.size() - 1);
 				}
 				Variable *last_var = static_cast<Variable *>(last_lex);
 				label_table[last_var->getName()] = lv.lines.size() - 1;
@@ -155,7 +156,7 @@ void LexicalAnalyzer::checkGoto(LexemVector & lv) {
 					if (i < n - 1 && line[i + 1]->getLexemType() == VAR) {
 						Variable *addr = static_cast<Variable *>(line[i + 1]);
 						if (label_table.find(addr->getName()) == label_table.end())
-							throw Error(GOTO_NOT_FOUND);
+							throw Error(GOTO_NOT_FOUND, j, i + 1);
 						Goto *gt = new Goto(label_table[addr->getName()]);
 						delete op;
 						delete addr;
@@ -163,7 +164,7 @@ void LexicalAnalyzer::checkGoto(LexemVector & lv) {
 						line.push_back(gt);
 						break;
 					} else
-						throw Error(GOTO_DEF_ERROR);
+						throw Error(GOTO_DEF_ERROR, j, i + 1);
 				}
 			}
 		}

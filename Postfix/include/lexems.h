@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "errors.h"
 
 #define YELLOW  "\033[1;33m"
 #define BLUE    "\033[1;36m"
@@ -21,20 +20,6 @@ using std::string;
 using std::set;
 
 enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC };
-
-const vector<string> OPERTEXT { "function", "return",
-								"print", "newline", "space",
-								"if", "then", "else", "endif",
-								"while", "endwhile",
-								",",
-								"=", "or", "and", "|", 
-                                "^", "&", "==", "!=", "<", 
-								"<=", ">", ">=", "<<", ">>", 
-								"+", "-", "*", "/", "%",
-								"[", "]",
-								"(", ")", ":", "goto",
-								"global"
-								};
 
 enum OPERATOR {
 	FUNCTION, RETURN,
@@ -51,6 +36,20 @@ enum OPERATOR {
 	GLOBAL
 };
 
+const vector<string> OPERTEXT { "function", "return",
+								"print", "newline", "space",
+								"if", "then", "else", "endif",
+								"while", "endwhile",
+								",",
+								"=", "or", "and", "|", 
+                                "^", "&", "==", "!=", "<", 
+								"<=", ">", ">=", "<<", ">>", 
+								"+", "-", "*", "/", "%",
+								"[", "]",
+								"(", ")", ":", "goto",
+								"global"
+								};
+								
 const int PRIORITY[] = {
 	-1, -1,
 	-1, -1, -1,
@@ -79,6 +78,8 @@ public:
 	virtual void print() const = 0;
 	int getRow() { return row; }
 	int getCol() { return col; }
+	void setPos(int row, int col) { Lexem::row = row; Lexem::col = col; }
+	void setPos(Lexem *lex) { row = lex->row; col = lex->col; }
 	~Lexem() {}
 };
 

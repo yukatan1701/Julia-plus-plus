@@ -2,8 +2,17 @@
 
 SyntaxAnalyzer::SyntaxAnalyzer(const LexicalAnalyzer & la, LexemVector & lv) {
 	findFunctions(lv);
-	//cout << "Intermediary:" << endl << lv;
+	addLexemNumbers(lv);
 	buildPostfix(lv);
+}
+
+void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv) {
+	for (int i = 0; i < lv.lines.size(); i++) {
+		for (int j = 0; j < lv.lines[i].size(); j++) {
+			Lexem *cur = lv.lines[i][j];
+			cur->setPos(i, j);
+		}
+	}
 }
 
 void SyntaxAnalyzer::findFunctions(LexemVector & lv) {

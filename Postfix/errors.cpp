@@ -17,7 +17,11 @@ const vector<string> err_text {
 	"Negative array size",
 	"Array not found",
 	"Array has already been defined",
-	"Index out of range"
+	"Index out of range",
+	"Invalid argument type",
+	"Opening bracket is missed",
+	"Operand type is incorrect or operand is missed",
+	"Separator (space or comma) is missed"
 	};
 
 void Error::print() {

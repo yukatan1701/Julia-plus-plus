@@ -1,6 +1,5 @@
 #include "executer.h"
 
-// TODO: clear tables
 Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv) {
 	map<string, Variable *> *var_table = new map<string, Variable *>;
 	var_tables.push(var_table);
@@ -50,25 +49,26 @@ void Executer::processArray(Lexem *val1, Lexem *val2,
 	int pos = num->getValue();
 	if (j == cur_line_size - 1) {
 		if (pos < 0)
-			throw Error(NEGATIVE_SIZE);
+			throw Error(NEGATIVE_SIZE, num->getRow(), num->getCol());
 		if (arr_table.find(var->getName()) != arr_table.end())
-			throw Error(ARRAY_REDEFINITION);
+			throw Error(ARRAY_REDEFINITION, var->getRow(), var->getCol());
 		arr_table[var->getName()] = new vector<int>(pos);
 	} else {
 		if (arr_table.find(var->getName()) == arr_table.end()
 			&& (*global_arr_table).find(var->getName()) == global_arr_table->end())	
-			throw Error(ARRAY_NOT_FOUND);
+			throw Error(ARRAY_NOT_FOUND, var->getRow(), var->getCol());
 		vector<int> *array;
 		if (arr_table.find(var->getName()) != arr_table.end())
 			array = arr_table[var->getName()];
 		else
 			array = (*global_arr_table)[var->getName()];
 		if (pos < 0)
-			throw Error(NEGATIVE_INDEX);
+			throw Error(NEGATIVE_INDEX, num->getRow(), num->getCol());
 		if (pos > array->size() - 1)
-			throw Error(INDEX_OUT_OF_RANGE);
+			throw Error(INDEX_OUT_OF_RANGE, num->getRow(), num->getCol());
 		int & cell = array->at(pos);
 		Lexem *ref = new Reference(var->getName(), cell);
+		ref->setPos(var);
 		values.push(ref);
 		temporary.push_back(ref);
 	}
@@ -101,6 +101,7 @@ void Executer::loadVariables(map<string, Variable *> & var_table, Function *func
 	for (auto it = args.cbegin(); it != args.cend(); it++) {
 		Number *num = static_cast<Number *>(values.top());
 		Variable *var = new Variable(*it, num->getValue());
+		var->setPos(num);
 		values.pop();
 		var_table[*it] = var;
 	}
@@ -133,7 +134,9 @@ void Executer::processVariable(Variable *var) {
 	map<string, Variable *> & var_table = *(var_tables.top());
 	if (var_table.find(var->getName()) == var_table.end()) {
 		if (global_var_table->find(var->getName()) == global_var_table->end()) {
+			Variable *old_var = var;
 			var = new Variable(var->getName(), var->getValue());
+			var->setPos(old_var);
 			var_table.insert(pair<string, Variable *>(var->getName(), var));
 			values.push(var_table[var->getName()]);
 		} else {
@@ -166,8 +169,7 @@ int Executer::callFunction(stack<int> & args, int old_i, int j) {
 	if (last->getLexemType() == OPER) {
 		Operator *oper = static_cast<Operator *>(last);
 		if (oper->getType() != LBRACKET) {
-			// TODO: syntax error
-		} else {
+			throw Error(MISSING_LBRACKET, oper->getRow(), oper->getCol());
 		}
 	} else if (last->getLexemType() == VAR || last->getLexemType() == NUM) {
 		args.push(last->getValue());
@@ -193,6 +195,7 @@ bool Executer::doReturn(stack<Function *> & functions, int & i, int & new_j) {
 			values.pop();
 		stack_sizes.pop();
 		Number *eax = new Number(ans->getValue());
+		eax->setPos(ans);
 		temporary.push_back(eax);
 		values.push(eax);
 	}
@@ -224,6 +227,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 		}
 		int old_i = i;
 		const vector<Lexem *> & cur_line = lv.lines[i++];
+		bool has_function_call = false;
 		for ( ; j < lv.lines[old_i].size(); j++) {
 			map<string, Variable *> & var_table = *(var_tables.top());
 			map<string, vector<int> *> & arr_table = *(arr_tables.top());
@@ -256,22 +260,28 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				}
 				if (op->getType() == LBRACKET) {
 					values.push(op);
+					has_function_call = true;
 					continue;
 				}
 				if (op->getType() == RBRACKET) {
 					i = callFunction(args, old_i, j);
+					has_function_call = false;
 					break;
 				}
+				if (values.empty())
+					throw Error(WRONG_OPERAND, op);
 				Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
 				if (op->getType() == COMMA) {
+					//if (!has_function_call)
+					//	throw Error(MISSING_LBRACKET, val2);
 					if (val2->getLexemType() == VAR || val2->getLexemType() == NUM) {
 						args.push(val2->getValue());
 						continue;
 					}
-					else // TODO: WRONG ARGUMENT
-						;
+					else
+						throw Error(WRONG_ARGUMENT, val2);
 				}
 				if (op->getType() == IF) {
 					If *opif = static_cast<If *>(op);
@@ -284,6 +294,8 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					result = op->getValue(val2, val2);
 					continue;
 				}
+				if (values.empty())
+					throw Error(WRONG_OPERAND, op);
 				Lexem *val1 = values.top();
 				values.pop();
 				if (op->getType() == LSQUARE) {
@@ -295,6 +307,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				else
 					result = op->getValue(val1, val2);
 				Lexem *res = new Number(result);
+				res->setPos(val1);
 				values.push(res);
 				temporary.push_back(res);
 			}
@@ -305,8 +318,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 }
 
 Executer::~Executer() {
-	for (auto it = global_arr_table->cbegin(); it != global_arr_table->cend(); it++)
-		delete it->second;
+	deleteTables();
 }
 
 void Executer::printInnerVars(const map<string, Variable *> & table) const {
@@ -334,7 +346,6 @@ void Executer::printInnerArrs(const map<string, vector<int> *> & table) const {
 			cout << num << " ";
 		cout << endl;
 	}
-
 }
 
 void Executer::printArrays() const {

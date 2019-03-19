@@ -25,6 +25,7 @@ private:
 	map<string, Function *> func_table;
 	bool checkPriority(const stack<Operator *> &, const Operator *) const;
 	void findFunctions(LexemVector & lv);
+	void addLexemNumbers(LexemVector & lv);
 	void buildPostfix(LexemVector & lv);
 public:
 	SyntaxAnalyzer(const LexicalAnalyzer & la, LexemVector & lv);

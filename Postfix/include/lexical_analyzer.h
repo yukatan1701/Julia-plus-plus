@@ -27,7 +27,7 @@ private:
 	bool isVariable(const string &) const;
 	bool isOperator(const string &) const;
 	Lexem *readNumber(const string &, int &) const;
-	Lexem *wordToLexem(const string &, int &) const;
+	Lexem *wordToLexem(const string &, int &, int line_num, int lex_num) const;
 	OPERATOR getOperatorByName(const string & op) const;
 	OPERSTYLE style(const string &) const;
 	void parseLexem(LexemVector & lines, const string & input);

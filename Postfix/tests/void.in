@@ -1,8 +1,10 @@
-function printf()
-	print 9
-	return
+#function 888()
+#	print 9
+#	return
 	
 global
-	printf()
-	newline
-	print 1
+	a = 8
+	b = (a + 1) * 2
+	print b	
+#	888()
+	print 4
