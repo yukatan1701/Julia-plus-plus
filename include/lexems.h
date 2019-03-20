@@ -19,7 +19,7 @@ using std::endl;
 using std::string;
 using std::set;
 
-enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC };
+enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC, UNARY_MINUS };
 
 enum OPERATOR {
 	FUNCTION, RETURN,
@@ -35,6 +35,14 @@ enum OPERATOR {
 	LBRACKET, RBRACKET, LABEL, 
 	PLUSPLUS, MINMIN,
 	GOTO, GLOBAL
+};
+
+const vector<string> PRE_UNARY {
+	"return", "print", "if", "while",
+	",", "=", "or", "and", "|", "^",
+	"&", "==", "!=", "<", "<=", ">",
+	">=", "<<", ">>", "+", "-", "*",
+	"/", "%", "[", "("
 };
 
 const vector<string> OPERTEXT { "function", "return",
@@ -150,6 +158,7 @@ public:
 	LEXEMTYPE getLexemType() const { return OPER; }
 	int priority() const;
 	virtual bool isBinary() const;
+	bool goodForUnary() const;
 	void print() const;
 };
 
@@ -161,6 +170,13 @@ public:
 	Plusplus(OPERATOR op, POSITION pos) : Operator(op), pos(pos) {}
 	POSITION getPosition() const { return pos; }
 	void print() const;
+};
+
+class UnaryMinus: public Operator {
+public:
+	UnaryMinus() : Operator(MINUS) {}
+	void print() const { cout << "-[U] "; }
+	LEXEMTYPE getLexemType() const { return UNARY_MINUS; }
 };
 
 class Goto: public Operator {

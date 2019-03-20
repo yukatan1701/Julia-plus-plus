@@ -22,7 +22,8 @@ const vector<string> err_text {
 	"Opening bracket is missed",
 	"Operand type is incorrect or operand is missed",
 	"Separator (space or comma) is missed",
-	"Invalid use of increment (decrement)"
+	"Invalid use of increment (decrement)",
+	"Invalid using of unary minus"
 	};
 
 void Error::print() {

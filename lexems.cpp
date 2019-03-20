@@ -49,6 +49,15 @@ int Operator::priority() const {
 	return PRIORITY[opertype];
 }
 
+bool Operator::goodForUnary() const {
+	string name = OPERTEXT[opertype];
+	for (string oper: PRE_UNARY) {
+		if (oper == name)
+			return true;
+	}
+	return false;
+}
+
 int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
 	int result = 0;
 	int left = l_left->getValue(), right = l_right->getValue();

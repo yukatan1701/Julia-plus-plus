@@ -227,6 +227,17 @@ void Executer::doPlusplus(Operator *op) {
 		throw Error(WRONG_INCREMENT_OPERAND, op);
 }
 
+void Executer::doUnaryMinus(Operator *op) {
+	Lexem *top = values.top();
+	values.pop();
+	if (top->getLexemType() == VAR || top->getLexemType() == NUM) {
+		Number *new_num = new Number(-(top->getValue()));
+		temporary.push_back(new_num);
+		values.push(new_num);
+	} else
+		throw Error(WRONG_INCREMENT_OPERAND, op);
+}
+
 void Executer::evaluatePostfix(LexemVector & lv) {
 	stack<Function *> functions;
 	int new_j = 0;
@@ -266,6 +277,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				Operator *op = static_cast<Operator *>(cur);
 				if (op->getType() == PLUSPLUS || op->getType() == MINMIN) {
 					doPlusplus(op);
+					continue;
+				}
+				if (op->getLexemType() == UNARY_MINUS) {
+					doUnaryMinus(op);
 					continue;
 				}
 				if (op->getType() == GOTO) {

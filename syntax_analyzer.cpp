@@ -108,6 +108,17 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 					op_stack.push(op);
 					continue;
 				}
+				if (optype == MINUS && (prev == nullptr || prev->getLexemType() == OPER)) {
+					Operator *prev_op = static_cast<Operator *>(prev);
+					if (prev_op->goodForUnary()) {
+						UnaryMinus *umin = new UnaryMinus();
+						umin->setPos(op);
+						delete lv.lines[i][j];
+						lv.lines[i][j] = umin;
+						op_stack.push(umin);
+						continue;
+					}
+				}
 				if (optype == LBRACKET) {
 					if (prev != nullptr && prev->getLexemType() == VAR) {
 						br_stack.push('*'); // special bracket for function call
