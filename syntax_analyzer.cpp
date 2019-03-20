@@ -71,14 +71,15 @@ bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack,
 }
 
 void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
-	for (int i = 0; i < lv.lines.size(); i++) {
+	for (unsigned int i = 0; i < lv.lines.size(); i++) {
 		stack<Operator *> op_stack;
 		stack<char> br_stack;
 		if (lv.lines[i].empty())
 			continue;
 		vector<Lexem *> postfix;
 		Lexem *prev = nullptr;
-		for (Lexem *cur : lv.lines[i]) {
+		for (unsigned int j = 0; j < lv.lines[i].size(); j++) {
+			Lexem *cur = lv.lines[i][j];
 			LEXEMTYPE lextype = cur->getLexemType();
 			if (lextype == FUNC) {
 				postfix.push_back(cur);
@@ -89,6 +90,24 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
 				OPERATOR optype = op->getType();
+				if (optype == PLUSPLUS || optype == MINMIN) {
+					/* postfix operator*/
+					Plusplus *oper = nullptr;
+					if (prev != nullptr && (prev->getLexemType() == VAR)) {
+						oper = new Plusplus(optype, POST);
+					} else if (j < lv.lines[i].size() - 1 && 
+					          (lv.lines[i][j + 1]->getLexemType() == NUM ||
+					          lv.lines[i][j + 1]->getLexemType() == VAR)) {
+						oper = new Plusplus(optype, PRE);						
+					} else
+						throw Error(WRONG_INCREMENT_OPERAND, op);
+					oper->setPos(op);
+					op = oper;
+					delete lv.lines[i][j];
+					lv.lines[i][j] = oper;
+					op_stack.push(op);
+					continue;
+				}
 				if (optype == LBRACKET) {
 					if (prev != nullptr && prev->getLexemType() == VAR) {
 						br_stack.push('*'); // special bracket for function call

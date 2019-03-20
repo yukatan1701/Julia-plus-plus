@@ -28,7 +28,7 @@ void Executer::findEntryPoint(const LexemVector & lv) {
 }
 
 bool Executer::isFastOperator(Operator *op) {
-	if (op->getType() == ENDIF)
+	if (op->getType() == ENDIF || op->getType() == GLOBAL)
 		return true;
 	if (op->getType() == NEWLINE) {
 		cout << endl;
@@ -210,6 +210,23 @@ bool Executer::doReturn(stack<Function *> & functions, int & i, int & new_j) {
 	return true;
 }
 
+void Executer::doPlusplus(Operator *op) {
+	Plusplus *opplus = static_cast<Plusplus *>(op);
+	Lexem *top = values.top();
+	int add = opplus->getType() == PLUSPLUS ? 1 : -1;
+	if (opplus->getPosition() == POST) {
+		Number *new_num = new Number(top->getValue());
+		values.pop();
+		values.push(new_num);
+		temporary.push_back(new_num);
+	}
+	if (top->getLexemType() == VAR) {
+		Variable *var = static_cast<Variable *>(top);
+		var->setValue(var->getValue() + add);
+	} else
+		throw Error(WRONG_INCREMENT_OPERAND, op);
+}
+
 void Executer::evaluatePostfix(LexemVector & lv) {
 	stack<Function *> functions;
 	int new_j = 0;
@@ -247,6 +264,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				processVariable(static_cast<Variable *>(cur));
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
+				if (op->getType() == PLUSPLUS || op->getType() == MINMIN) {
+					doPlusplus(op);
+					continue;
+				}
 				if (op->getType() == GOTO) {
 					Goto *gt = static_cast<Goto *>(op);
 					i = gt->getAddress();

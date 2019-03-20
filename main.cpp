@@ -24,7 +24,6 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 		julia.run(code);
-		code.close();
 	} else {
 		string code = readCode();
 		julia.run(code);

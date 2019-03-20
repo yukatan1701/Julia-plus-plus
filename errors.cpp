@@ -21,7 +21,8 @@ const vector<string> err_text {
 	"Invalid argument type",
 	"Opening bracket is missed",
 	"Operand type is incorrect or operand is missed",
-	"Separator (space or comma) is missed"
+	"Separator (space or comma) is missed",
+	"Invalid use of increment (decrement)"
 	};
 
 void Error::print() {

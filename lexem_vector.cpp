@@ -6,7 +6,7 @@ LexemVector::LexemVector() {
 }
 
 ostream& operator<<(ostream &os, const LexemVector& lv) {
-	int i = 0;
+	int i = 1;
 	for (auto line : lv.lines) {
 		cout << i++ << " | ";
 		for (auto elem : line)

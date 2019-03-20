@@ -32,8 +32,9 @@ enum OPERATOR {
 	LEQ, GT, GEQ, SHL, SHR,
 	PLUS, MINUS, MULT, DIV, MOD,
 	LSQUARE, RSQUARE,
-	LBRACKET, RBRACKET, LABEL, GOTO,
-	GLOBAL
+	LBRACKET, RBRACKET, LABEL, 
+	PLUSPLUS, MINMIN,
+	GOTO, GLOBAL
 };
 
 const vector<string> OPERTEXT { "function", "return",
@@ -46,8 +47,9 @@ const vector<string> OPERTEXT { "function", "return",
 								"<=", ">", ">=", "<<", ">>", 
 								"+", "-", "*", "/", "%",
 								"[", "]",
-								"(", ")", ":", "goto",
-								"global"
+								"(", ")", ":",
+								"++", "--", 
+								"goto", "global"
 								};
 								
 const int PRIORITY[] = {
@@ -61,8 +63,9 @@ const int PRIORITY[] = {
 	8, 8, 8, 9, 9,
 	10, 10, 11, 11, 11,
 	13, 13,
-	13, 13, 14, 14,
-	15
+	13, 13, 14, 
+	15, 15,
+	16, 16
 };
 
 enum FUNCTYPE { VOID, INT };
@@ -147,6 +150,16 @@ public:
 	LEXEMTYPE getLexemType() const { return OPER; }
 	int priority() const;
 	virtual bool isBinary() const;
+	void print() const;
+};
+
+enum POSITION {PRE, POST};
+
+class Plusplus: public Operator {
+	POSITION pos;
+public:
+	Plusplus(OPERATOR op, POSITION pos) : Operator(op), pos(pos) {}
+	POSITION getPosition() const { return pos; }
 	void print() const;
 };
 

@@ -102,6 +102,7 @@ Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i, int line_num
 	}
 	if (isVariable(word))
 		return new Variable(word, 0);
+	//cout << word << endl;
 	throw Error(WRONG_VAR, line_num, lex_num);
 }
 

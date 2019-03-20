@@ -1,5 +1,16 @@
 #include "lexems.h"
 
+void Plusplus::print() const {
+	if (opertype == PLUSPLUS)
+		cout << "++";
+	else
+		cout << "--";
+	if (pos == POST)
+		cout << "[POST] ";
+	else
+		cout << "[PRE] ";
+}
+
 Function::Function(string name, set<string> args, int line) {
 	Function::name = name;
 	Function::args = args;

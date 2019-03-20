@@ -9,6 +9,7 @@ void Julia::run(ifstream & file) const {
 	while (getline(file, line))
 		code += line + ";";
 	process(code);
+	file.close();
 }
 
 

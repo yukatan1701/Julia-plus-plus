@@ -36,6 +36,7 @@ private:
 	void evaluatePostfix(LexemVector & lv);
 	void processArray(Lexem *val1, Lexem *val2, int j, int cur_line_size);
 	void processVariable(Variable *var);
+	void doPlusplus(Operator *op);
 	int doAssign(Lexem *val1, Lexem *val2);
 	bool doReturn(stack<Function *> & functions, int & i, int & new_j);
 	int callFunction(stack<int> & args, int old_i, int j);
