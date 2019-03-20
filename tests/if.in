@@ -1,8 +1,0 @@
-global
-	n = 5
-	print n
-	newline
-	if n == 0 then
-		print 0
-	endif
-	print 9

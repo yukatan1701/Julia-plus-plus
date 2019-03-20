@@ -1,0 +1,22 @@
+# let's fill array with numbers in ascending order
+# and print this array in reverse order
+
+# array definition
+size = 10
+a[size]
+
+i = 0
+while i < size then
+	a[i] = i++
+endwhile
+
+# surprise!
+a[a[3]] = -a[a[3]]
+++a[8]
+
+i = size - 1
+while i >= 0 then
+	print a[i--]
+	space
+endwhile
+

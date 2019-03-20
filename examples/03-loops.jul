@@ -1,3 +1,6 @@
+# let's print matrix
+# use while-then-endwhile construction to create a loop
+
 i = 1
 while i < 10 then
 	j = 1

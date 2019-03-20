@@ -95,10 +95,21 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 					Plusplus *oper = nullptr;
 					if (prev != nullptr && (prev->getLexemType() == VAR)) {
 						oper = new Plusplus(optype, POST);
+					} else if (prev != nullptr && prev->getLexemType() == OPER) {
+						Operator *op_prev = static_cast<Operator *>(prev);
+						if (op_prev->getType() != RSQUARE)
+							throw Error(WRONG_INCREMENT_OPERAND, op);
+						oper = new Plusplus(optype, POST);
 					} else if (j < lv.lines[i].size() - 1 && 
 					          (lv.lines[i][j + 1]->getLexemType() == NUM ||
 					          lv.lines[i][j + 1]->getLexemType() == VAR)) {
 						oper = new Plusplus(optype, PRE);						
+					} else if (j < lv.lines[i].size() - 1 && 
+					          (lv.lines[i][j + 1]->getLexemType() == OPER)) {
+						Operator *op_next = static_cast<Operator *>(lv.lines[i][j + 1]);
+						if (op_next->getType() != LSQUARE)
+							throw Error(WRONG_INCREMENT_OPERAND, op);
+						oper = new Plusplus(optype, PRE);
 					} else
 						throw Error(WRONG_INCREMENT_OPERAND, op);
 					oper->setPos(op);

@@ -22,7 +22,7 @@ using std::set;
 enum LEXEMTYPE { NUM, OPER, VAR, REF, FUNC, UNARY_MINUS };
 
 enum OPERATOR {
-	FUNCTION, RETURN,
+	FUNCTION, RETURN, PRINTLN,
 	PRINT, NEWLINE, SPACE,
 	IF, THEN, ELSE, ENDIF,
 	WHILE, ENDWHILE,
@@ -45,7 +45,7 @@ const vector<string> PRE_UNARY {
 	"/", "%", "[", "("
 };
 
-const vector<string> OPERTEXT { "function", "return",
+const vector<string> OPERTEXT { "function", "return", "println",
 								"print", "newline", "space",
 								"if", "then", "else", "endif",
 								"while", "endwhile",
@@ -61,7 +61,7 @@ const vector<string> OPERTEXT { "function", "return",
 								};
 								
 const int PRIORITY[] = {
-	-1, -1,
+	-1, -1, -1,
 	-1, -1, -1,
 	-1, -1, -1, -1,
 	-1, -1,

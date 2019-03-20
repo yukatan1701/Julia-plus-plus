@@ -1,0 +1,34 @@
+# Let's learn how to use functions!
+# Write 'function' word to define a function.
+# Use parentheses and commas to define parameters.
+# Use 'return' word (with or without answer) to leave the function.
+# Be sure to write 'global' word because your program must have the entry point.
+
+# void function with one parameter
+function printvalue(x)
+	println x
+	return
+
+# int function with two parameters
+function sum_two(a, b)
+	return a + b
+
+# void function without parameters
+function printsomething()
+	println 29012019 
+	return
+
+# int function with parameters
+function ar_sum(n)
+	return (n + 1) * n / 2
+
+# int function without parameters
+function get100()
+	return 100	
+	
+global
+	s = ar_sum(9 + 1)
+	printvalue(s)
+	printsomething()
+	println get100()
+	println sum_two(14, 9)

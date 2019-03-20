@@ -1,0 +1,12 @@
+# Call a function within itself to create recursion.
+# Let's write a function that calculates the n-th Fibonacci number.
+
+function fib(n)
+	if n == 0 or n == 1 then
+		return 1
+	endif
+	return fib(n - 1) + fib(n - 2)
+
+global
+	n = 5
+	println fib(n)

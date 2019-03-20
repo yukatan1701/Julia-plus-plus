@@ -1,8 +1,0 @@
-count = 10
-a[count]
-i = 0
-while i < count then
-	a[i] = i + 10
-	i++
-endwhile
-print a[-1]

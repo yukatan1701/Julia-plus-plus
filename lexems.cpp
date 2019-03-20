@@ -36,7 +36,7 @@ Operator::Operator(OPERATOR type) {
 
 bool Operator::isBinary() const {
 	const string &name = OPERTEXT[opertype];
-	if (name == "print" || name == ",")
+	if (name == "print" || name == "println" || name == ",")
 		return false;
 	return true;
 }
@@ -98,6 +98,9 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
 			return left >= right;
 		case GT:
 			return left > right;
+		case PRINTLN:
+			cout << left << endl;
+			return 0;
 		case PRINT:
 			cout << left;
 			return 0;

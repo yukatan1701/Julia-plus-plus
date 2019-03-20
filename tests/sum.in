@@ -1,7 +1,0 @@
-function sum(x, y)
-	return x + y
-
-global
-	aa = 7
-	bb = 1
-	xx = sum(aa, bb)

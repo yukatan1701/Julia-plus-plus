@@ -1,0 +1,17 @@
+# Let's learn how to use labels.
+# Use ':' to set label and 'goto' to jump on it.
+# Use if-then-endif construction to create a condition.
+
+a = 5
+b = 8
+
+begin:
+
+if a < b then
+	print a
+	space
+	a++
+	goto begin
+endif
+
+print 0

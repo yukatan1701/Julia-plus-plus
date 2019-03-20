@@ -223,6 +223,9 @@ void Executer::doPlusplus(Operator *op) {
 	if (top->getLexemType() == VAR) {
 		Variable *var = static_cast<Variable *>(top);
 		var->setValue(var->getValue() + add);
+	} else if (top->getLexemType() == REF) {
+		Reference *ref = static_cast<Reference *>(top);
+		ref->getReference() = ref->getValue() + add;
 	} else
 		throw Error(WRONG_INCREMENT_OPERAND, op);
 }
@@ -230,7 +233,8 @@ void Executer::doPlusplus(Operator *op) {
 void Executer::doUnaryMinus(Operator *op) {
 	Lexem *top = values.top();
 	values.pop();
-	if (top->getLexemType() == VAR || top->getLexemType() == NUM) {
+	if (top->getLexemType() == VAR || top->getLexemType() == NUM 
+	    || top->getLexemType() == REF) {
 		Number *new_num = new Number(-(top->getValue()));
 		temporary.push_back(new_num);
 		values.push(new_num);

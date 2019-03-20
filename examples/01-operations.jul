@@ -1,0 +1,26 @@
+# Here's the comment!
+# Use 'println' to print value with a line break
+# or 'print' to print without it.
+# Also you can use 'space' to put " " character and
+# 'newline' to add a line break manually.
+
+a = 7 + 3
+b = (a + 2) * 8
+println b
+a = (a / 2) % 2
+println a
+
+d = 2 - 1
+d = d << 4
+println d
+
+println 1 ^ 0
+x = y = 15 & 2
+r = 2 | 4
+println x
+
+# yes, it's an increment and a decrement.
+
+println ++y
+println r--
+println r
