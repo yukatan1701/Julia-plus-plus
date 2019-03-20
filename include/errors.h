@@ -24,7 +24,8 @@ enum ERROR_CODES { WRONG_VAR,
 				   WRONG_OPERAND,
 				   MISSED_SEPARATOR,
 				   WRONG_INCREMENT_OPERAND,
-				   WRONG_UMIN
+				   WRONG_UMIN,
+				   WRONG_LOCAL_DEF
 				 };
 
 class Error {

@@ -41,13 +41,17 @@ bool Executer::isFastOperator(Operator *op) {
 	return false;
 }
 
-void Executer::processArray(Lexem *val1, Lexem *val2,
+void Executer::processArray(Lexem *val1, Lexem *val2, Lexem *next_val,
 							int j, int cur_line_size) {
 	map<string, vector<int> *> & arr_table = *(arr_tables.top());
 	Variable *var = static_cast<Variable *>(val1);
 	Number *num = static_cast<Number *>(val2);
 	int pos = num->getValue();
-	if (j == cur_line_size - 1) {
+	Operator *next = nullptr;
+	if (next_val != nullptr && next_val->getLexemType() == OPER) {
+		next = static_cast<Operator *>(next_val);
+	}
+	if (j == cur_line_size - 1 || (next != nullptr && next->getType() == LOCAL)) {
 		if (pos < 0)
 			throw Error(NEGATIVE_SIZE, num->getRow(), num->getCol());
 		if (arr_table.find(var->getName()) != arr_table.end())
@@ -146,6 +150,17 @@ void Executer::processVariable(Variable *var) {
 		values.push(var_table[var->getName()]);
 	}
 }
+
+/*void Executer::processVariable(Variable *var) {
+	map<string, Variable *> & var_table = *(var_tables.top());
+	if (var_table.find(var->getName()) == var_table.end()) {
+			Variable *old_var = var;
+			var = new Variable(var->getName(), var->getValue());
+			var->setPos(old_var);
+			var_table.insert(pair<string, Variable *>(var->getName(), var));
+	}
+	values.push(var_table[var->getName()]);
+}*/
 
 int Executer::doAssign(Lexem *val1, Lexem *val2) {
 	map<string, Variable *> & var_table = *(var_tables.top());
@@ -279,6 +294,17 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				processVariable(static_cast<Variable *>(cur));
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
+				if (op->getType() == LOCAL) {
+					if (values.empty())
+						continue;
+					if (values.top()->getLexemType() != VAR)
+						// TODO: wrong global variable definition
+						;
+					Variable *old_var = static_cast<Variable *>(values.top());
+					Variable *var = new Variable(old_var->getName(), old_var->getValue());
+					var_table.insert(pair<string, Variable *>(var->getName(), var));
+					continue;
+				}
 				if (op->getType() == PLUSPLUS || op->getType() == MINMIN) {
 					doPlusplus(op);
 					continue;
@@ -339,7 +365,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				Lexem *val1 = values.top();
 				values.pop();
 				if (op->getType() == LSQUARE) {
-					processArray(val1, val2, j, cur_line.size());
+					Lexem *next_val = nullptr;
+					if (j < lv.lines[old_i].size() - 1)
+						next_val = lv.lines[old_i][j + 1];
+					processArray(val1, val2, next_val, j, cur_line.size());
 					continue;
 				}
 				if (op->getType() == ASSIGN)

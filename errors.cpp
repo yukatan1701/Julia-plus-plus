@@ -23,7 +23,8 @@ const vector<string> err_text {
 	"Operand type is incorrect or operand is missed",
 	"Separator (space or comma) is missed",
 	"Invalid use of increment (decrement)",
-	"Invalid using of unary minus"
+	"Invalid using of unary minus",
+	"Wrong local variable definition"
 	};
 
 void Error::print() {

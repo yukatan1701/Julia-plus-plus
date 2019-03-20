@@ -1,0 +1,29 @@
+# Variables have two scopes: local and global.
+# If you want to use a local variable that 
+# has the same name as a global variable,
+# you should put the word 'local'.
+
+function dont_change()
+	local y
+	local a[10]
+	a[5] = 17
+	y = 30
+	return
+
+function change()
+	b[7] = 4
+	x = 10
+	return
+
+global
+	a[10]
+	b[8]
+	x = 5
+	y = 7
+	change()
+	dont_change()
+	println a[5]
+	println b[7]
+	println x
+	println y
+	
