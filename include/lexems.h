@@ -38,6 +38,11 @@ enum OPERATOR {
 	GOTO, GLOBAL
 };
 
+const vector<OPERATOR> PAIR_OPS {
+	FUNCTION, PRINTLN, PRINT,
+	IF, WHILE, LOCAL, GOTO
+};
+
 const vector<string> PRE_UNARY {
 	"return", "print", "if", "while",
 	",", "=", "or", "and", "|", "^",
@@ -46,21 +51,22 @@ const vector<string> PRE_UNARY {
 	"/", "%", "[", "("
 };
 
-const vector<string> OPERTEXT { "function", "return", "println",
-								"print", "newline", "space",
-								"if", "then", "else", "endif",
-								"while", "endwhile",
-								"local",
-								",",
-								"=", "or", "and", "|", 
-                                "^", "&", "==", "!=", "<", 
-								"<=", ">", ">=", "<<", ">>", 
-								"+", "-", "*", "/", "%",
-								"[", "]",
-								"(", ")", ":",
-								"++", "--", 
-								"goto", "global"
-								};
+const vector<string> OPERTEXT {
+	"function", "return", "println",
+	"print", "newline", "space",
+	"if", "then", "else", "endif",
+	"while", "endwhile",
+	"local",
+	",",
+	"=", "or", "and", "|", 
+    "^", "&", "==", "!=", "<", 
+	"<=", ">", ">=", "<<", ">>", 
+	"+", "-", "*", "/", "%",
+	"[", "]",
+	"(", ")", ":",
+	"++", "--", 
+	"goto", "global"
+};
 								
 const int PRIORITY[] = {
 	-1, -1, -1,

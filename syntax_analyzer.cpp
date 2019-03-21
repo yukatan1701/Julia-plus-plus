@@ -16,17 +16,21 @@ void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv) {
 }
 
 void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
-	stack<Function *> fstack;
+	Function *last_func = nullptr;
+	bool has_return = true;
 	for (int i = 0; i < lv.lines.size(); i++) {
 		for(int j = 0; j < lv.lines[i].size(); j++) {
 			Lexem *cur = lv.lines[i][j];
 			if (j == 0 && cur->getLexemType() == OPER) {	
 				Operator *op = static_cast<Operator *>(cur);
 				if (op->getType() == RETURN) {
+					if (last_func == nullptr)
+						throw Error(NO_FUNCTION_DEF, i, j);
 					if (j == lv.lines[i].size() - 1)
-						fstack.top()->setType(VOID);
+						last_func->setType(VOID);
 					else
-						fstack.top()->setType(INT);
+						last_func->setType(INT);
+					has_return = true;
 				}
 			}
 			if (j == 0) continue;
@@ -36,6 +40,9 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 				Operator *op = static_cast<Operator *>(prev);
 				Variable *var = static_cast<Variable *>(cur);
 				if (op->getType() == FUNCTION) {
+					if (!has_return)
+						throw Error(NO_RETURN, i, j);
+					has_return = false;
 					set<string> args;
 					for (int k = j + 1; k < lv.lines[i].size(); k++) {
 						Lexem *lex = lv.lines[i][k];
@@ -47,9 +54,7 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 					}
 					lv.lines[i].resize(1);
 					Function *func = new Function(var->getName(), args, i);
-					if (!fstack.empty())
-						fstack.pop();
-					fstack.push(func);
+					last_func = func;
 					func_table.insert(pair<string, Function *>(var->getName(), func));
 					delete cur;
 					lv.lines[i][j - 1] = (Lexem *) func;
@@ -70,6 +75,44 @@ bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack,
 	return op->priority() < op_stack.top()->priority();
 }
 
+void SyntaxAnalyzer::processPlusplus(LexemVector & lv, stack<Operator *> & op_stack, 
+                                     Operator *op, Lexem *prev, int i, int j) {
+	Plusplus *oper = nullptr;
+	OPERATOR optype = op->getType();
+	if (prev != nullptr && (prev->getLexemType() == VAR)) {
+		oper = new Plusplus(optype, POST);
+	} else if (j < lv.lines[i].size() - 1 && 
+	          (lv.lines[i][j + 1]->getLexemType() == NUM ||
+	          lv.lines[i][j + 1]->getLexemType() == VAR)) {
+		oper = new Plusplus(optype, PRE);						
+	} else if (prev != nullptr && prev->getLexemType() == OPER) {
+		Operator *op_prev = static_cast<Operator *>(prev);
+		if (op_prev->getType() != RSQUARE)
+			throw Error(WRONG_INCREMENT_OPERAND, op);
+		oper = new Plusplus(optype, POST);
+	} else if (j < lv.lines[i].size() - 1 && 
+	          (lv.lines[i][j + 1]->getLexemType() == OPER)) {
+		Operator *op_next = static_cast<Operator *>(lv.lines[i][j + 1]);
+		if (op_next->getType() != LSQUARE)
+			throw Error(WRONG_INCREMENT_OPERAND, op);
+		oper = new Plusplus(optype, PRE);
+	} else
+		throw Error(WRONG_INCREMENT_OPERAND, op);
+	oper->setPos(op);
+	delete lv.lines[i][j];
+	lv.lines[i][j] = oper;
+	op_stack.push(oper);
+}
+
+bool SyntaxAnalyzer::isPairOperator(const Operator *op) {
+	OPERATOR optype = op->getType();
+	for (OPERATOR type: PAIR_OPS) {
+		if (type == optype)
+			return true;
+	}
+	return false;
+}
+
 void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 	for (unsigned int i = 0; i < lv.lines.size(); i++) {
 		stack<Operator *> op_stack;
@@ -80,6 +123,7 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 		Lexem *prev = nullptr;
 		for (unsigned int j = 0; j < lv.lines[i].size(); j++) {
 			Lexem *cur = lv.lines[i][j];
+			int line_size = lv.lines[i].size();
 			LEXEMTYPE lextype = cur->getLexemType();
 			if (lextype == FUNC) {
 				postfix.push_back(cur);
@@ -90,33 +134,12 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
 				OPERATOR optype = op->getType();
+				if (optype == GLOBAL && line_size > 1)
+					throw Error(TOO_MANY_WORDS, op);
+				if (isPairOperator(op) && line_size == 1)
+					throw Error(TOO_FEW_WORDS, op);
 				if (optype == PLUSPLUS || optype == MINMIN) {
-					/* postfix operator*/
-					Plusplus *oper = nullptr;
-					if (prev != nullptr && (prev->getLexemType() == VAR)) {
-						oper = new Plusplus(optype, POST);
-					} else if (prev != nullptr && prev->getLexemType() == OPER) {
-						Operator *op_prev = static_cast<Operator *>(prev);
-						if (op_prev->getType() != RSQUARE)
-							throw Error(WRONG_INCREMENT_OPERAND, op);
-						oper = new Plusplus(optype, POST);
-					} else if (j < lv.lines[i].size() - 1 && 
-					          (lv.lines[i][j + 1]->getLexemType() == NUM ||
-					          lv.lines[i][j + 1]->getLexemType() == VAR)) {
-						oper = new Plusplus(optype, PRE);						
-					} else if (j < lv.lines[i].size() - 1 && 
-					          (lv.lines[i][j + 1]->getLexemType() == OPER)) {
-						Operator *op_next = static_cast<Operator *>(lv.lines[i][j + 1]);
-						if (op_next->getType() != LSQUARE)
-							throw Error(WRONG_INCREMENT_OPERAND, op);
-						oper = new Plusplus(optype, PRE);
-					} else
-						throw Error(WRONG_INCREMENT_OPERAND, op);
-					oper->setPos(op);
-					op = oper;
-					delete lv.lines[i][j];
-					lv.lines[i][j] = oper;
-					op_stack.push(op);
+					processPlusplus(lv, op_stack, op, prev, i, j);
 					continue;
 				}
 				if (optype == MINUS && (prev == nullptr || prev->getLexemType() == OPER)) {

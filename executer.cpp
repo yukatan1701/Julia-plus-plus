@@ -298,8 +298,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					if (values.empty())
 						continue;
 					if (values.top()->getLexemType() != VAR)
-						// TODO: wrong global variable definition
-						;
+						throw Error(WRONG_LOCAL_DEF, values.top());
 					Variable *old_var = static_cast<Variable *>(values.top());
 					Variable *var = new Variable(old_var->getName(), old_var->getValue());
 					var_table.insert(pair<string, Variable *>(var->getName(), var));

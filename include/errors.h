@@ -25,7 +25,11 @@ enum ERROR_CODES { WRONG_VAR,
 				   MISSED_SEPARATOR,
 				   WRONG_INCREMENT_OPERAND,
 				   WRONG_UMIN,
-				   WRONG_LOCAL_DEF
+				   WRONG_LOCAL_DEF,
+				   TOO_MANY_WORDS,
+				   TOO_FEW_WORDS,
+				   NO_FUNCTION_DEF,
+				   NO_RETURN
 				 };
 
 class Error {
