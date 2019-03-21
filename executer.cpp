@@ -294,7 +294,8 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				processVariable(static_cast<Variable *>(cur));
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
-				if (op->getType() == LOCAL) {
+				OPERTYPE optype = op->getType();
+				if (optype == LOCAL) {
 					if (values.empty())
 						continue;
 					if (values.top()->getLexemType() != VAR)
@@ -304,7 +305,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					var_table.insert(pair<string, Variable *>(var->getName(), var));
 					continue;
 				}
-				if (op->getType() == PLUSPLUS || op->getType() == MINMIN) {
+				if (optype == PLUSPLUS || optype == MINMIN) {
 					doPlusplus(op);
 					continue;
 				}
@@ -312,23 +313,23 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					doUnaryMinus(op);
 					continue;
 				}
-				if (op->getType() == GOTO) {
+				if (optype == GOTO) {
 					Goto *gt = static_cast<Goto *>(op);
 					i = gt->getAddress();
 					break;
 				}
 				if (isFastOperator(op))
 					continue;
-				if (op->getType() == RETURN) {
+				if (optype == RETURN) {
 					is_return = doReturn(functions, i, new_j);
 					break;
 				}
-				if (op->getType() == LBRACKET) {
+				if (optype == LBRACKET) {
 					values.push(op);
 					has_function_call = true;
 					continue;
 				}
-				if (op->getType() == RBRACKET) {
+				if (optype == RBRACKET) {
 					i = callFunction(args, old_i, j);
 					has_function_call = false;
 					break;
@@ -338,7 +339,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				Lexem *val2 = values.top();
 				values.pop();
 				int result = 0;
-				if (op->getType() == COMMA) {
+				if (optype == COMMA) {
 					//if (!has_function_call)
 					//	throw Error(MISSING_LBRACKET, val2);
 					if (val2->getLexemType() == VAR || val2->getLexemType() == NUM) {
@@ -348,7 +349,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					else
 						throw Error(WRONG_ARGUMENT, val2);
 				}
-				if (op->getType() == IF) {
+				if (optype == IF) {
 					If *opif = static_cast<If *>(op);
 					int cond = val2->getValue();
 					if (cond == 0)
@@ -363,14 +364,14 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					throw Error(WRONG_OPERAND, op);
 				Lexem *val1 = values.top();
 				values.pop();
-				if (op->getType() == LSQUARE) {
+				if (optype == LSQUARE) {
 					Lexem *next_val = nullptr;
 					if (j < lv.lines[old_i].size() - 1)
 						next_val = lv.lines[old_i][j + 1];
 					processArray(val1, val2, next_val, j, cur_line.size());
 					continue;
 				}
-				if (op->getType() == ASSIGN)
+				if (optype == ASSIGN)
 					result = doAssign(val1, val2);
 				else
 					result = op->getValue(val1, val2);

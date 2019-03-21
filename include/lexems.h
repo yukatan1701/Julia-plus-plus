@@ -40,7 +40,7 @@ enum OPERATOR {
 
 const vector<OPERATOR> PAIR_OPS {
 	FUNCTION, PRINTLN, PRINT,
-	IF, WHILE, LOCAL, GOTO
+	IF, WHILE, LOCAL
 };
 
 const vector<string> PRE_UNARY {

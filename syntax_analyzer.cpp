@@ -18,6 +18,7 @@ void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv) {
 void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 	Function *last_func = nullptr;
 	bool has_return = true;
+	bool has_global = false;
 	for (int i = 0; i < lv.lines.size(); i++) {
 		for(int j = 0; j < lv.lines[i].size(); j++) {
 			Lexem *cur = lv.lines[i][j];
@@ -31,6 +32,12 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 					else
 						last_func->setType(INT);
 					has_return = true;
+				} else if (op->getType() == GLOBAL) {
+					if (has_global)
+						throw Error(GLOBAL_REDEFINITION, i, j);
+					if (!has_return)
+						throw Error(NO_RETURN, i, j);
+					has_global = true;
 				}
 			}
 			if (j == 0) continue;
@@ -43,6 +50,10 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 					if (!has_return)
 						throw Error(NO_RETURN, i, j);
 					has_return = false;
+				}
+				if (op->getType() == FUNCTION) {
+					if (has_global)
+						throw Error(FUNCTION_AFTER_GLOBAL, i, j);
 					set<string> args;
 					for (int k = j + 1; k < lv.lines[i].size(); k++) {
 						Lexem *lex = lv.lines[i][k];
@@ -63,6 +74,8 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 			}
 		}
 	}
+	if (last_func != nullptr && !has_global)
+		throw Error(NO_ENTRY_POINT, 0, 0);
 }
 
 bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack, 

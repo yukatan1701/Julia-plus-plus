@@ -28,8 +28,11 @@ const vector<string> err_text {
 	"Too many words on line of 'global'",
 	"Too few words for operator",
 	"No function definition for operator 'return'",
-	"No 'return' definition for previous function"
-	};
+	"No 'return' definition for previous function",
+	"'global' section has already been defined",
+	"Function definition after the 'global' section",
+	"Entry point not found"
+};
 
 void Error::print() {
 	cout << RED << "Error on line " << row + 1 << ", lexem " 
