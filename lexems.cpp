@@ -1,6 +1,7 @@
 #include "lexems.h"
 
-void Plusplus::print() const {
+void Plusplus::print() const
+{
 	if (opertype == PLUSPLUS)
 		cout << "++";
 	else
@@ -11,13 +12,15 @@ void Plusplus::print() const {
 		cout << "[PRE] ";
 }
 
-Function::Function(string name, set<string> args, int line) {
+Function::Function(string name, set<string> args, int line)
+{
 	Function::name = name;
 	Function::args = args;
 	Function::line = line;
 }
 
-void Function::print() const {
+void Function::print() const
+{
 	string stype;
 	if (type == INT)
 		stype = "int";
@@ -26,30 +29,36 @@ void Function::print() const {
 	cout << "[" << stype << " " << name << "(" << args.size() << ")" << "] ";
 }
 
-Number::Number(int val = 0) {
+Number::Number(int val = 0)
+{
 	value = val;
 }
 
-Operator::Operator(OPERATOR type) {
+Operator::Operator(OPERATOR type)
+{
 	opertype = type;
 }
 
-bool Operator::isBinary() const {
+bool Operator::isBinary() const
+{
 	const string &name = OPERTEXT[opertype];
 	if (name == "print" || name == "println" || name == ",")
 		return false;
 	return true;
 }
 
-void Operator::print() const {
+void Operator::print() const
+{
 	cout << OPERTEXT[opertype] << " ";
 }
 
-int Operator::priority() const { 
+int Operator::priority() const
+{
 	return PRIORITY[opertype];
 }
 
-bool Operator::goodForUnary() const {
+bool Operator::goodForUnary() const
+{
 	string name = OPERTEXT[opertype];
 	for (string oper: PRE_UNARY) {
 		if (oper == name)
@@ -58,7 +67,8 @@ bool Operator::goodForUnary() const {
 	return false;
 }
 
-int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
+int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const
+{
 	int result = 0;
 	int left = l_left->getValue(), right = l_right->getValue();
 	switch (opertype) {
@@ -112,4 +122,3 @@ int Operator::getValue(const Lexem * l_left, const Lexem * l_right) const {
 	}
 	return result;
 }
-

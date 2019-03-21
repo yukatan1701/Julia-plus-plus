@@ -35,8 +35,9 @@ const vector<string> err_text {
 	"The number of parameters does not match the number of arguments"
 };
 
-void Error::print() {
+void Error::print()
+{
 	cout << RED << "Error on line " << row + 1 << ", lexem " 
-	     << col + 1 << ": " << RESET;
+		<< col + 1 << ": " << RESET;
 	cout << err_text[code] << "." << endl;
 }

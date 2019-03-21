@@ -5,11 +5,13 @@ extern const vector<string> OPERTEXT;
 const char DELIMITER = ' ';
 const char TAB = '\t';
 
-LexicalAnalyzer::LexicalAnalyzer(LexemVector & lv, const string & text) {
+LexicalAnalyzer::LexicalAnalyzer(LexemVector & lv, const string & text)
+{
 	runAnalyzer(lv, text);
 }
 
-OPERATOR LexicalAnalyzer::getOperatorByName(const string & op) const {
+OPERATOR LexicalAnalyzer::getOperatorByName(const string & op) const
+{
 	int oper_pos;
 	for (oper_pos = 0; oper_pos < OPERTEXT.size(); oper_pos++) {
 		if (OPERTEXT[oper_pos] == op)
@@ -18,11 +20,13 @@ OPERATOR LexicalAnalyzer::getOperatorByName(const string & op) const {
 	return (OPERATOR) oper_pos;
 }
 
-bool LexicalAnalyzer::isVariableChar(char ch) const {
+bool LexicalAnalyzer::isVariableChar(char ch) const
+{
 	return ch == '_' || isalnum(ch);
 }
 
-bool LexicalAnalyzer::isOperatorChar(char ch) const {
+bool LexicalAnalyzer::isOperatorChar(char ch) const
+{
 	for (auto oper : OPERTEXT) {
 		if (oper.find(ch) != std::string::npos)
 			return true;
@@ -30,14 +34,16 @@ bool LexicalAnalyzer::isOperatorChar(char ch) const {
 	return isalpha(ch);
 }
 
-Lexem * LexicalAnalyzer::readNumber(const string & input, int & i) const {
+Lexem * LexicalAnalyzer::readNumber(const string & input, int & i) const
+{
 	int value = 0;
 	while (isdigit(input[i]))
 		value = value * 10 + (input[i++] - '0');
 	return new Number(value);
 }
 
-bool LexicalAnalyzer::isOperator(const string & word) const {
+bool LexicalAnalyzer::isOperator(const string & word) const
+{
 	if (word.empty())
 		return false;
 	for (auto elem : OPERTEXT) {
@@ -47,7 +53,8 @@ bool LexicalAnalyzer::isOperator(const string & word) const {
 	return false;
 }
 
-bool LexicalAnalyzer::isVariable(const string & word) const {
+bool LexicalAnalyzer::isVariable(const string & word) const
+{
 	if (word.empty())
 		return false;
 	for (int i = 0; i < word.size(); i++) {
@@ -57,13 +64,16 @@ bool LexicalAnalyzer::isVariable(const string & word) const {
 	return true;
 }
 
-OPERSTYLE LexicalAnalyzer::style(const string & word) const {
+OPERSTYLE LexicalAnalyzer::style(const string & word) const
+{
 	if (isalpha(word[word.size() - 1]))
 		return WORD;
 	return CHARS;
 }
 
-Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i, int line_num, int lex_num) const {
+Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i, 
+	int line_num, int lex_num) const
+{
 	string word;
 	if (isOperatorChar(input[i])) {
 		bool is_word = isalpha(input[i]);
@@ -106,7 +116,8 @@ Lexem * LexicalAnalyzer::wordToLexem(const string & input, int & i, int line_num
 	throw Error(WRONG_VAR, line_num, lex_num);
 }
 
-void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
+void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input)
+{
 	vector<Lexem *> line;
 	for (int i = 0; i < input.size(); ) {
 		char ch = input[i];
@@ -115,19 +126,21 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 			continue;
 		}
 		Lexem *cur_lex;
+		int lines_count = lv.lines.size();
+		int lexem_count = line.size();
 		if (isdigit(ch)) {
 			cur_lex = readNumber(input, i);
 			if (i < input.size() && (isalpha(input[i]) || input[i] == '_'))
-				throw Error(MISSED_SEPARATOR, lv.lines.size() - 1, line.size() - 1);
+				throw Error(MISSED_SEPARATOR, lines_count - 1, lexem_count - 1);
 		} else {
 			if (ch == '#')
 				break;
-			cur_lex = wordToLexem(input, i, lv.lines.size() - 1, line.size());
+			cur_lex = wordToLexem(input, i, lines_count - 1, lexem_count);
 			// add label
 			if (ch == ':') {
 				Lexem *last_lex = line[line.size() - 1];
 				if (last_lex->getLexemType() != VAR) {
-					throw Error(WRONG_LABEL, lv.lines.size() - 1, line.size() - 1);
+					throw Error(WRONG_LABEL, lines_count - 1, lexem_count - 1);
 				}
 				Variable *last_var = static_cast<Variable *>(last_lex);
 				label_table[last_var->getName()] = lv.lines.size() - 1;
@@ -144,7 +157,8 @@ void LexicalAnalyzer::parseLexem(LexemVector & lv, const string & input) {
 	lv.lines.push_back(empty);
 }
 
-void LexicalAnalyzer::checkGoto(LexemVector & lv) {
+void LexicalAnalyzer::checkGoto(LexemVector & lv)
+{
 	for (int j = 0; j < lv.lines.size(); j++) {
 		vector<Lexem *> & line = lv.lines[j];
 		Lexem *lexem;
@@ -172,7 +186,8 @@ void LexicalAnalyzer::checkGoto(LexemVector & lv) {
 	}
 }
 
-void LexicalAnalyzer::checkIf(LexemVector & lv) {
+void LexicalAnalyzer::checkIf(LexemVector & lv)
+{
 	stack<If *> ifstack;
 	for (int j = 0; j < lv.lines.size(); j++) {
 		vector<Lexem *> & line = lv.lines[j];
@@ -210,7 +225,8 @@ void LexicalAnalyzer::checkIf(LexemVector & lv) {
 	}
 }
 
-void LexicalAnalyzer::checkWhile(LexemVector & lv) {
+void LexicalAnalyzer::checkWhile(LexemVector & lv)
+{
 	stack<If *> whstack;
 	stack<int> whline;
 	for (int j = 0; j < lv.lines.size(); j++) {
@@ -246,7 +262,8 @@ void LexicalAnalyzer::checkWhile(LexemVector & lv) {
 	}
 }
 
-void LexicalAnalyzer::runAnalyzer(LexemVector & lv, const string & text) {
+void LexicalAnalyzer::runAnalyzer(LexemVector & lv, const string & text)
+{
 	string input;
 	for (auto letter: text) {
 		if (letter == ';') {
@@ -261,7 +278,8 @@ void LexicalAnalyzer::runAnalyzer(LexemVector & lv, const string & text) {
 	checkWhile(lv);
 }
 
-void LexicalAnalyzer::printLabels() const {
+void LexicalAnalyzer::printLabels() const
+{
 	cout << endl << BLUE << "Label\t" << RESET << "| " 
 	     << BLUE << "Address" << RESET << endl;
 	cout << "--------+--------" << endl;

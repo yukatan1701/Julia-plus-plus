@@ -1,12 +1,14 @@
 #include "syntax_analyzer.h"
 
-SyntaxAnalyzer::SyntaxAnalyzer(const LexicalAnalyzer & la, LexemVector & lv) {
+SyntaxAnalyzer::SyntaxAnalyzer(const LexicalAnalyzer & la, LexemVector & lv)
+{
 	findFunctions(lv);
 	addLexemNumbers(lv);
 	buildPostfix(lv);
 }
 
-void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv) {
+void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv)
+{
 	for (int i = 0; i < lv.lines.size(); i++) {
 		for (int j = 0; j < lv.lines[i].size(); j++) {
 			Lexem *cur = lv.lines[i][j];
@@ -15,7 +17,8 @@ void SyntaxAnalyzer::addLexemNumbers(LexemVector & lv) {
 	}
 }
 
-void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
+void SyntaxAnalyzer::findFunctions(LexemVector & lv)
+{
 	Function *last_func = nullptr;
 	bool has_return = true;
 	bool has_global = false;
@@ -66,7 +69,8 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 					lv.lines[i].resize(1);
 					Function *func = new Function(var->getName(), args, i);
 					last_func = func;
-					func_table.insert(pair<string, Function *>(var->getName(), func));
+					func_table.insert(pair<string, Function *>(var->getName(), 
+						func));
 					delete cur;
 					lv.lines[i][j - 1] = (Lexem *) func;
 					break;
@@ -78,8 +82,9 @@ void SyntaxAnalyzer::findFunctions(LexemVector & lv) {
 		throw Error(NO_ENTRY_POINT, 0, 0);
 }
 
-bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack, 
-                                   const Operator *op) const {
+bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack,
+	const Operator *op) const
+{
 	ACCOCIATE pos = LEFT;
 	if (op->getType() == ASSIGN)
 		pos = RIGHT;
@@ -88,8 +93,9 @@ bool SyntaxAnalyzer::checkPriority(const stack<Operator *> & op_stack,
 	return op->priority() < op_stack.top()->priority();
 }
 
-void SyntaxAnalyzer::processPlusplus(LexemVector & lv, stack<Operator *> & op_stack, 
-                                     Operator *op, Lexem *prev, int i, int j) {
+void SyntaxAnalyzer::processPlusplus(LexemVector & lv, 
+	stack<Operator *> & op_stack, Operator *op, Lexem *prev, int i, int j)
+{
 	Plusplus *oper = nullptr;
 	OPERATOR optype = op->getType();
 	if (prev != nullptr && (prev->getLexemType() == VAR)) {
@@ -117,7 +123,8 @@ void SyntaxAnalyzer::processPlusplus(LexemVector & lv, stack<Operator *> & op_st
 	op_stack.push(oper);
 }
 
-bool SyntaxAnalyzer::isPairOperator(const Operator *op) {
+bool SyntaxAnalyzer::isPairOperator(const Operator *op)
+{
 	OPERATOR optype = op->getType();
 	for (OPERATOR type: PAIR_OPS) {
 		if (type == optype)
@@ -126,7 +133,8 @@ bool SyntaxAnalyzer::isPairOperator(const Operator *op) {
 	return false;
 }
 
-void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
+void SyntaxAnalyzer::buildPostfix(LexemVector & lv)
+{
 	for (unsigned int i = 0; i < lv.lines.size(); i++) {
 		stack<Operator *> op_stack;
 		stack<char> br_stack;
@@ -155,7 +163,8 @@ void SyntaxAnalyzer::buildPostfix(LexemVector & lv) {
 					processPlusplus(lv, op_stack, op, prev, i, j);
 					continue;
 				}
-				if (optype == MINUS && (prev == nullptr || prev->getLexemType() == OPER)) {
+				if (optype == MINUS && (prev == nullptr || 
+					prev->getLexemType() == OPER)) {
 					Operator *prev_op = static_cast<Operator *>(prev);
 					if (prev_op->goodForUnary()) {
 						UnaryMinus *umin = new UnaryMinus();

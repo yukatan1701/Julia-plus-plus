@@ -24,8 +24,8 @@ class SyntaxAnalyzer {
 private:
 	map<string, Function *> func_table;
 	bool checkPriority(const stack<Operator *> &, const Operator *) const;
-	void processPlusplus(LexemVector & lv, stack<Operator *> & op_stack, 
-	                     Operator *op, Lexem *prev, int i, int j);
+	void processPlusplus(LexemVector & lv, stack<Operator *> & op_stack,
+		Operator *op, Lexem *prev, int i, int j);
 	bool isPairOperator(const Operator *op);
 	void findFunctions(LexemVector & lv);
 	void addLexemNumbers(LexemVector & lv);

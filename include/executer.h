@@ -34,7 +34,8 @@ private:
 	void loadVariables(map<string, Variable *> & var_table, Function *func);
 	void deleteTables();
 	void evaluatePostfix(LexemVector & lv);
-	void processArray(Lexem *val1, Lexem *val2, Lexem *next_val, int j, int cur_line_size);
+	void processArray(Lexem *val1, Lexem *val2, Lexem *next_val, 
+		int j, int cur_line_size);
 	void processVariable(Variable *var);
 	void doPlusplus(Operator *op);
 	void doUnaryMinus(Operator *op);

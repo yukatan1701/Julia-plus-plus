@@ -1,6 +1,7 @@
 #include "executer.h"
 
-Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv) {
+Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv)
+{
 	map<string, Variable *> *var_table = new map<string, Variable *>;
 	var_tables.push(var_table);
 	global_var_table = var_tables.top();
@@ -10,11 +11,11 @@ Executer::Executer(const SyntaxAnalyzer & sa, LexemVector & lv) {
 
 	findEntryPoint(lv);
 	func_table = sa.func_table;
-	//cout << entry_point << endl;
 	evaluatePostfix(lv);
 }
 
-void Executer::findEntryPoint(const LexemVector & lv) {
+void Executer::findEntryPoint(const LexemVector & lv)
+{
 	entry_point = 0;
 	for (int i = 0; i < lv.lines.size(); i++) {
 		if (!lv.lines[i].empty() && lv.lines[i][0]->getLexemType() == OPER) {
@@ -27,7 +28,8 @@ void Executer::findEntryPoint(const LexemVector & lv) {
 	}
 }
 
-bool Executer::isFastOperator(Operator *op) {
+bool Executer::isFastOperator(Operator *op)
+{
 	if (op->getType() == ENDIF || op->getType() == GLOBAL)
 		return true;
 	if (op->getType() == NEWLINE) {
@@ -42,7 +44,8 @@ bool Executer::isFastOperator(Operator *op) {
 }
 
 void Executer::processArray(Lexem *val1, Lexem *val2, Lexem *next_val,
-							int j, int cur_line_size) {
+	int j, int cur_line_size)
+{
 	map<string, vector<int> *> & arr_table = *(arr_tables.top());
 	Variable *var = static_cast<Variable *>(val1);
 	Number *num = static_cast<Number *>(val2);
@@ -51,15 +54,17 @@ void Executer::processArray(Lexem *val1, Lexem *val2, Lexem *next_val,
 	if (next_val != nullptr && next_val->getLexemType() == OPER) {
 		next = static_cast<Operator *>(next_val);
 	}
-	if (j == cur_line_size - 1 || (next != nullptr && next->getType() == LOCAL)) {
+	if (j == cur_line_size - 1 || 
+		(next != nullptr && next->getType() == LOCAL)) {
 		if (pos < 0)
 			throw Error(NEGATIVE_SIZE, num->getRow(), num->getCol());
 		if (arr_table.find(var->getName()) != arr_table.end())
 			throw Error(ARRAY_REDEFINITION, var->getRow(), var->getCol());
 		arr_table[var->getName()] = new vector<int>(pos);
 	} else {
-		if (arr_table.find(var->getName()) == arr_table.end()
-			&& (*global_arr_table).find(var->getName()) == global_arr_table->end())	
+		if (arr_table.find(var->getName()) == arr_table.end() &&
+			(*global_arr_table).find(var->getName()) == 
+			global_arr_table->end())
 			throw Error(ARRAY_NOT_FOUND, var->getRow(), var->getCol());
 		vector<int> *array;
 		if (arr_table.find(var->getName()) != arr_table.end())
@@ -78,26 +83,27 @@ void Executer::processArray(Lexem *val1, Lexem *val2, Lexem *next_val,
 	}
 }
 
-void Executer::addToStack(stack<int> & args, int count) {
+void Executer::addToStack(stack<int> & args, int count)
+{
 	for (int i = 0; i < count; i++) {
-		//cout << args.top() << " ";
 		Lexem *num = new Number(args.top());
 		args.pop();
 		temporary.push_back(num);
 		values.push(num);
 	}
-	//cout << endl;
 }
 
-void Executer::createTables() {
-	//cout << "Creating tables..." << endl;
+void Executer::createTables()
+{
 	map<string, Variable *> *var_table = new map<string, Variable *>;
 	var_tables.push(var_table);
 	map<string, vector<int> *> *arr_table = new map<string, vector<int> *>;
 	arr_tables.push(arr_table);
 }
 
-void Executer::loadVariables(map<string, Variable *> & var_table, Function *func) {
+void Executer::loadVariables(map<string, Variable *> & var_table, 
+	Function *func)
+{
 	int argc = func->getArgc();
 	set<string> args = func->getArgs();
 	if (args.empty())
@@ -111,7 +117,8 @@ void Executer::loadVariables(map<string, Variable *> & var_table, Function *func
 	}
 }
 
-void Executer::deleteTables() {	
+void Executer::deleteTables()
+{	
 	map<string, Variable *> *var_table = var_tables.top();
 	for (auto it = var_table->cbegin(); it != var_table->cend(); it++)
 		delete it->second;
@@ -124,7 +131,8 @@ void Executer::deleteTables() {
 	arr_tables.pop();
 }
 
-void print_stack(const stack<Lexem *> & old_st) {
+void print_stack(const stack<Lexem *> & old_st)
+{
 	stack<Lexem *> st = old_st;
 	cout << "Stack: ";
 	while (!st.empty()) {
@@ -134,7 +142,8 @@ void print_stack(const stack<Lexem *> & old_st) {
 	cout << endl;
 }
 
-void Executer::processVariable(Variable *var) {
+void Executer::processVariable(Variable *var)
+{
 	map<string, Variable *> & var_table = *(var_tables.top());
 	if (var_table.find(var->getName()) == var_table.end()) {
 		if (global_var_table->find(var->getName()) == global_var_table->end()) {
@@ -151,7 +160,8 @@ void Executer::processVariable(Variable *var) {
 	}
 }
 
-/*void Executer::processVariable(Variable *var) {
+/*void Executer::processVariable(Variable *var)
+{
 	map<string, Variable *> & var_table = *(var_tables.top());
 	if (var_table.find(var->getName()) == var_table.end()) {
 			Variable *old_var = var;
@@ -162,7 +172,8 @@ void Executer::processVariable(Variable *var) {
 	values.push(var_table[var->getName()]);
 }*/
 
-int Executer::doAssign(Lexem *val1, Lexem *val2) {
+int Executer::doAssign(Lexem *val1, Lexem *val2)
+{
 	map<string, Variable *> & var_table = *(var_tables.top());
 	int left = val1->getValue(), right = val2->getValue();
 	if (val1->getLexemType() == VAR) {
@@ -179,7 +190,8 @@ int Executer::doAssign(Lexem *val1, Lexem *val2) {
 	return right;
 }
 
-int Executer::callFunction(stack<int> & args, int old_i, int j) {
+int Executer::callFunction(stack<int> & args, int old_i, int j)
+{
 	Lexem *last = values.top();
 	if (last->getLexemType() == OPER) {
 		Operator *oper = static_cast<Operator *>(last);
@@ -190,7 +202,6 @@ int Executer::callFunction(stack<int> & args, int old_i, int j) {
 		args.push(last->getValue());
 		values.pop();
 	}
-	// TODO: check
 	values.pop();
 	Variable *func_name = static_cast<Variable *>(values.top());
 	Function *func = func_table[func_name->getName()];
@@ -203,7 +214,8 @@ int Executer::callFunction(stack<int> & args, int old_i, int j) {
 	return func->getLine();
 }
 
-bool Executer::doReturn(stack<Function *> & functions, int & i, int & new_j) {
+bool Executer::doReturn(stack<Function *> & functions, int & i, int & new_j)
+{
 	Function *cur_func = functions.top();
 	if (cur_func->getType() == INT) {
 		Lexem *ans = values.top();
@@ -227,7 +239,8 @@ bool Executer::doReturn(stack<Function *> & functions, int & i, int & new_j) {
 	return true;
 }
 
-void Executer::doPlusplus(Operator *op) {
+void Executer::doPlusplus(Operator *op)
+{
 	Plusplus *opplus = static_cast<Plusplus *>(op);
 	Lexem *top = values.top();
 	int add = opplus->getType() == PLUSPLUS ? 1 : -1;
@@ -247,7 +260,8 @@ void Executer::doPlusplus(Operator *op) {
 		throw Error(WRONG_INCREMENT_OPERAND, op);
 }
 
-void Executer::doUnaryMinus(Operator *op) {
+void Executer::doUnaryMinus(Operator *op)
+{
 	Lexem *top = values.top();
 	values.pop();
 	if (top->getLexemType() == VAR || top->getLexemType() == NUM 
@@ -259,7 +273,8 @@ void Executer::doUnaryMinus(Operator *op) {
 		throw Error(WRONG_INCREMENT_OPERAND, op);
 }
 
-void Executer::evaluatePostfix(LexemVector & lv) {
+void Executer::evaluatePostfix(LexemVector & lv)
+{
 	stack<Function *> functions;
 	stack< stack<int> *> args;
 	int new_j = 0;
@@ -301,8 +316,10 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					if (values.top()->getLexemType() != VAR)
 						throw Error(WRONG_LOCAL_DEF, values.top());
 					Variable *old_var = static_cast<Variable *>(values.top());
-					Variable *var = new Variable(old_var->getName(), old_var->getValue());
-					var_table.insert(pair<string, Variable *>(var->getName(), var));
+					Variable *var = new Variable(old_var->getName(), 
+						old_var->getValue());
+					var_table.insert(pair<string, Variable *>(var->getName(), 
+						var));
 					continue;
 				}
 				if (optype == PLUSPLUS || optype == MINMIN) {
@@ -345,7 +362,8 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				if (optype == COMMA) {
 					//if (!has_function_call)
 					//	throw Error(MISSING_LBRACKET, val2);
-					if (val2->getLexemType() == VAR || val2->getLexemType() == NUM) {
+					if (val2->getLexemType() == VAR || 
+						val2->getLexemType() == NUM) {
 						args.top()->push(val2->getValue());
 						continue;
 					}
@@ -393,7 +411,8 @@ Executer::~Executer() {
 	deleteTables();
 }
 
-void Executer::printInnerVars(const map<string, Variable *> & table) const {
+void Executer::printInnerVars(const map<string, Variable *> & table) const
+{
 	cout << endl << BLUE << "Var\t" << RESET << "| " 
 	     << BLUE << "Value" << RESET << endl;
 	cout << "--------+--------" << endl;
@@ -404,11 +423,13 @@ void Executer::printInnerVars(const map<string, Variable *> & table) const {
 		cout << "<empty>" << endl;
 }
 
-void Executer::printVariables() const {
+void Executer::printVariables() const
+{
 	printInnerVars(*global_var_table);
 }
 
-void Executer::printInnerArrs(const map<string, vector<int> *> & table) const {
+void Executer::printInnerArrs(const map<string, vector<int> *> & table) const
+{
 	cout << endl << BLUE << "Arrays: " << RESET << endl;
 	cout << "------------------" << endl;
 	for (auto it = table.cbegin(); it != table.cend(); it++) {
@@ -420,6 +441,7 @@ void Executer::printInnerArrs(const map<string, vector<int> *> & table) const {
 	}
 }
 
-void Executer::printArrays() const {
+void Executer::printArrays() const
+{
 	printInnerArrs(*global_arr_table);
 }

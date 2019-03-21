@@ -1,11 +1,13 @@
 #include "lexem_vector.h"
 
-LexemVector::LexemVector() {
+LexemVector::LexemVector()
+{
 	vector<Lexem *> code_end;
 	lines.push_back(code_end);
 }
 
-ostream& operator<<(ostream &os, const LexemVector& lv) {
+ostream& operator<<(ostream &os, const LexemVector& lv)
+{
 	int i = 1;
 	for (auto line : lv.lines) {
 		cout << i++ << " | ";
@@ -16,7 +18,8 @@ ostream& operator<<(ostream &os, const LexemVector& lv) {
 	cout << endl;
 }
 
-void LexemVector::free() {
+void LexemVector::free()
+{
 	for (auto line : lines) {
 		for (auto elem : line)
 			delete elem;
@@ -24,7 +27,8 @@ void LexemVector::free() {
 	}
 }
 
-LexemVector::~LexemVector() {
+LexemVector::~LexemVector()
+{
 	//cout << "Destructor." << endl;
 	free();
 }

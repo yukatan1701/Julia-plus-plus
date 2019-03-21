@@ -41,8 +41,10 @@ class Error {
 	ERROR_CODES code;
 	int row, col;
 public:
-	Error(ERROR_CODES err, int row = 0, int col = 0): code(err), row(row), col(col) {}
-	Error(ERROR_CODES err, Lexem *lex): code(err), row(lex->getRow()), col(lex->getCol()) {}
+	Error(ERROR_CODES err, int row = 0, int col = 0)
+		: code(err), row(row), col(col) {}
+	Error(ERROR_CODES err, Lexem *lex)
+		: code(err), row(lex->getRow()), col(lex->getCol()) {}
 	void print();
 };
 

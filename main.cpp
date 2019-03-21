@@ -8,14 +8,16 @@ using std::ifstream;
 using std::cout;
 using std::endl;
 
-string readCode() {
+string readCode()
+{
 	string code, line;
 	while (getline(cin, line))
 		code += line + ";";
 	return code;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	Julia julia;
 	if (argc > 1) {
 		ifstream code(argv[1]);
