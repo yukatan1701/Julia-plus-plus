@@ -78,7 +78,7 @@ void Executer::processArray(Lexem *val1, Lexem *val2, Lexem *next_val,
 	}
 }
 
-void Executer::addToStack(stack<int> args, int count) {
+void Executer::addToStack(stack<int> & args, int count) {
 	for (int i = 0; i < count; i++) {
 		//cout << args.top() << " ";
 		Lexem *num = new Number(args.top());
@@ -194,6 +194,8 @@ int Executer::callFunction(stack<int> & args, int old_i, int j) {
 	values.pop();
 	Variable *func_name = static_cast<Variable *>(values.top());
 	Function *func = func_table[func_name->getName()];
+	if (func->getArgc() != args.size())
+		throw Error(INVALID_ARGUMENT_COUNT, func_name);
 	values.pop();
 	stack_sizes.push(values.size());
 	addToStack(args, func->getArgc());
@@ -259,10 +261,10 @@ void Executer::doUnaryMinus(Operator *op) {
 
 void Executer::evaluatePostfix(LexemVector & lv) {
 	stack<Function *> functions;
+	stack< stack<int> *> args;
 	int new_j = 0;
 	bool is_return = false;
 	for (int i = entry_point; i < lv.lines.size(); ) {	
-		stack<int> args;
 		int j = 0;
 		if (is_return) {
 			is_return = false;
@@ -279,8 +281,6 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 			map<string, Variable *> & var_table = *(var_tables.top());
 			map<string, vector<int> *> & arr_table = *(arr_tables.top());
 			Lexem *cur = cur_line[j];
-			//cur->print();
-			//cout << endl;
 			LEXEMTYPE lextype = cur->getLexemType();
 			if (lextype == FUNC) {
 				Function *cur_func = static_cast<Function *>(cur);
@@ -294,7 +294,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				processVariable(static_cast<Variable *>(cur));
 			} else {
 				Operator *op = static_cast<Operator *>(cur);
-				OPERTYPE optype = op->getType();
+				OPERATOR optype = op->getType();
 				if (optype == LOCAL) {
 					if (values.empty())
 						continue;
@@ -326,12 +326,15 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 				}
 				if (optype == LBRACKET) {
 					values.push(op);
+					args.push(new stack<int>);
 					has_function_call = true;
 					continue;
 				}
 				if (optype == RBRACKET) {
-					i = callFunction(args, old_i, j);
+					i = callFunction(*(args.top()), old_i, j);
 					has_function_call = false;
+					delete args.top();
+					args.pop();
 					break;
 				}
 				if (values.empty())
@@ -343,7 +346,7 @@ void Executer::evaluatePostfix(LexemVector & lv) {
 					//if (!has_function_call)
 					//	throw Error(MISSING_LBRACKET, val2);
 					if (val2->getLexemType() == VAR || val2->getLexemType() == NUM) {
-						args.push(val2->getValue());
+						args.top()->push(val2->getValue());
 						continue;
 					}
 					else

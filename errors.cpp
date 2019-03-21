@@ -31,7 +31,8 @@ const vector<string> err_text {
 	"No 'return' definition for previous function",
 	"'global' section has already been defined",
 	"Function definition after the 'global' section",
-	"Entry point not found"
+	"Entry point not found",
+	"The number of parameters does not match the number of arguments"
 };
 
 void Error::print() {

@@ -29,7 +29,7 @@ private:
 	stack< pair<int, int> > returnAddresses;
 
 	void createTables();
-	void addToStack(stack<int> args, int count);
+	void addToStack(stack<int> & args, int count);
 	void findEntryPoint(const LexemVector & lv);
 	void loadVariables(map<string, Variable *> & var_table, Function *func);
 	void deleteTables();
