@@ -14,6 +14,11 @@ This is my simple programming language created for the semester work. It has no 
 * local and global scopes.
 
 ## How to use it?
+0. Use this command to build the library:
+```
+make lib
+```
+
 1. Put the **julia.a** archive in the project directory and include it:
 ```c++
 #include "julia.a"
