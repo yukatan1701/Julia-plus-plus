@@ -1,17 +1,24 @@
 CC=g++
-CFLAGS=-c -I include -std=c++11 -fmax-errors=5
+CFLAGS=-I include -std=c++11 -fmax-errors=5
 LDFLAGS=
-SOURCES=main.cpp julia.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp errors.cpp
-OBJECTS=$(SOURCES:.cpp=.o)
+SRCDIR=src
+BINDIR=bin
+FILES=julia.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp errors.cpp
+SOURCES=$(FILES:%.cpp=$(SRCDIR)/%.cpp)
+OBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(BINDIR)/%.o)
 EXECUTABLE=julia
 
 all: $(SOURCES) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+lib: $(OBJECTS)
+	rm julia.a
+	ar rvs julia.a $(OBJECTS)
 
-.cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) main.cpp -o $@
+
+$(OBJECTS): $(BINDIR)/%.o : $(SRCDIR)/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf *.o $(EXECUTABLE)
