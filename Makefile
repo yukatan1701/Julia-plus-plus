@@ -17,8 +17,11 @@ lib: $(OBJECTS)
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) main.cpp -o $@
 
-$(OBJECTS): $(BINDIR)/%.o : $(SRCDIR)/%.cpp
+$(OBJECTS): $(BINDIR)/%.o : $(SRCDIR)/%.cpp outdir
 	$(CC) $(CFLAGS) -c $< -o $@
+
+outdir:
+	mkdir -p $(BINDIR)
 
 clean:
 	rm -rf *.o $(EXECUTABLE)
