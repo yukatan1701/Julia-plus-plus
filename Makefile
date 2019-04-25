@@ -11,16 +11,16 @@ EXECUTABLE=julia
 all: $(SOURCES) $(EXECUTABLE)
 
 lib: $(OBJECTS)
-	rm julia.a
+	rm -f julia.a
 	ar rvs julia.a $(OBJECTS)
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) main.cpp -o $@
 
-$(OBJECTS): $(BINDIR)/%.o : $(SRCDIR)/%.cpp outdir
+$(OBJECTS): $(BINDIR)/%.o : $(SRCDIR)/%.cpp | $(BINDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-outdir:
+$(BINDIR):
 	mkdir -p $(BINDIR)
 
 clean:
