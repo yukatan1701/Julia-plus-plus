@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-I include -std=c++11 -fmax-errors=5
 LDFLAGS=
-SRCDIR=src
+SRCDIR=sources
 BINDIR=bin
 FILES=julia.cpp lexical_analyzer.cpp syntax_analyzer.cpp executer.cpp lexem_vector.cpp lexems.cpp errors.cpp
 SOURCES=$(FILES:%.cpp=$(SRCDIR)/%.cpp)

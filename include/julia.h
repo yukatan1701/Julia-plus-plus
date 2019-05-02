@@ -16,10 +16,10 @@ using std::string;
 using std::ifstream;
 
 class Julia {
-	void process(const string & text) const;
+	void process(const string & text, bool debug_mode) const;
 public:
-	void run(string & code) const;
-	void run(ifstream & file) const;
+	void run(string & code, bool debug_mode) const;
+	void run(ifstream & file, bool debug_mode) const;
 };
 
 #endif

@@ -28,7 +28,7 @@ make lib
 ```c++
 Julia julia;
 std::ifstream file("code.jul");
-julia.run(file);
+julia.run(file, debug_mode);
 ```
 * String mode:
 ```c++
@@ -36,8 +36,9 @@ Julia julia;
 // some function to get a string with the code
 // (use ';' as a sepatator for lines)
 std::string code = read_code();
-julia.run(code);
+julia.run(code, debug_mode);
 ```
+`debug_mode` is a boolean value. Set **true** if you want to print debug information and **false** otherwise. 
 3. Put the **include** folder in the project directory and compile:
 ```bash
 g++ main.cpp julia.a -I include -o main
