@@ -43,7 +43,11 @@ julia.run(code, debug_mode);
 ```bash
 g++ main.cpp julia.a -I include -o main
 ```
-4. Success!
+4. Run with parameters:
+```
+./main -f examples/07-scopes.jul -d
+```
+After`-f`, enter the file name (your code). Set `-d` if you want to see the debug information. 
 
 ## How to learn it?
 Use the **examples** directory as a tutorial. Every file contains all necessary language information and features description.
